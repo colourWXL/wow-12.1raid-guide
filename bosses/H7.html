@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>圣糖刺客 12.1 团本攻略</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e13; --bg-2:#0e1219; --surface:#151b25; --surface-2:#1b2330;
+  --surface-3:#232d3b; --border:#2a3543; --border-soft:#1f2832;
+  --text:#e9eef5; --text-muted:#94a4b6; --text-dim:#66758a;
+  --toxic:#4fd99a; --toxic-soft:rgba(79,217,154,.12); --toxic-line:rgba(79,217,154,.35);
+  --arcane:#4cc4ff; --gold:#e9c46a; --danger:#ff5d6c;
+  --amber:#f4a261; --purple:#b18cff; --orange:#ff8a4c; --pink:#ff6fae;
+  --radius:14px; --radius-sm:9px;
+  --shadow:0 10px 30px -12px rgba(0,0,0,.6);
+  --maxw:1280px;
+  --appbar-h:120px; /* 由 JS 实测 .appbar 高度写入，保证侧栏紧贴其下方 */
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:"Oswald","Noto Sans SC",sans-serif; font-weight:600; letter-spacing:.02em; margin:0}
+a{color:inherit; text-decoration:none}
+button{font-family:inherit; cursor:pointer}
+
+/* ---------- App bar ---------- */
+.appbar{
+  position:sticky; top:0; z-index:40;
+  background:rgba(11,14,19,.82); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border-soft);
+}
+.appbar-inner{max-width:var(--maxw); margin:0 auto; padding:12px 20px;
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:12px; min-width:0}
+.brand .crest{
+  width:38px; height:38px; flex:0 0 auto; border-radius:10px;
+  background:linear-gradient(135deg,var(--toxic),#2a8f63);
+  display:grid; place-items:center; color:#06140d; font-weight:700; font-family:Oswald;
+  box-shadow:0 0 18px -4px var(--toxic-line)}
+.brand .t1{font-size:1.05rem; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.brand .t2{font-size:.72rem; color:var(--text-dim); letter-spacing:.18em; text-transform:uppercase}
+.search{flex:1 1 280px; min-width:200px; position:relative; max-width:560px}
+.search input{
+  width:100%; padding:11px 14px 11px 40px; border-radius:11px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text); font-size:.95rem; outline:none; transition:.15s}
+.search input:focus{border-color:var(--toxic-line); box-shadow:0 0 0 3px var(--toxic-soft)}
+.search svg{position:absolute; left:13px; top:50%; transform:translateY(-50%); opacity:.5}
+.menu-btn{display:none; background:var(--surface); border:1px solid var(--border); color:var(--text);
+  border-radius:10px; padding:9px 12px; font-size:.9rem}
+
+/* ---------- Filter row ---------- */
+.filters{max-width:var(--maxw); margin:0 auto; padding:12px 20px 14px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.filters .lbl{font-size:.8rem; color:var(--text-dim); letter-spacing:.1em; text-transform:uppercase}
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{
+  border:1px solid var(--border); background:var(--surface); color:var(--text-muted);
+  padding:6px 13px; border-radius:999px; font-size:.82rem; display:inline-flex; align-items:center; gap:7px;
+  transition:.15s; user-select:none}
+.chip:hover{border-color:var(--text-dim); color:var(--text)}
+.chip .dot{width:9px; height:9px; border-radius:50%; background:var(--text-dim)}
+.chip.active{color:#06140d; font-weight:600; border-color:transparent}
+.chip.active[data-tag="英雄专属"]{background:var(--arcane)} .chip.active[data-tag="英雄专属"] .dot{background:#063}
+.chip.active[data-tag="史诗专属"]{background:var(--danger); color:#fff} .chip.active[data-tag="史诗专属"] .dot{background:#fff}
+.chip.active[data-tag="可打断"]{background:var(--amber)} .chip.active[data-tag="可打断"] .dot{background:#5a3a00}
+.chip.active[data-tag="可驱散"]{background:var(--purple)} .chip.active[data-tag="可驱散"] .dot{background:#2a1450}
+.chip.active[data-tag="打坦"]{background:var(--orange)} .chip.active[data-tag="打坦"] .dot{background:#5a2a00}
+.chip.active[data-tag="特殊"]{background:var(--pink)} .chip.active[data-tag="特殊"] .dot{background:#5a0030}
+.chip.active[data-tag="全部"]{background:var(--toxic); color:#06140d}
+.reset{margin-left:auto; background:none; border:1px solid var(--border); color:var(--text-muted);
+  border-radius:8px; padding:6px 12px; font-size:.8rem}
+.reset:hover{color:var(--text); border-color:var(--text-dim)}
+
+/* ---------- Layout ---------- */
+/* 去掉 layout 的 padding-top：让 sidebar 顶端紧贴 .appbar 底部，
+   初始位置即等于它的 sticky top，从而滚动时完全不动。 */
+.layout{max-width:var(--maxw); margin:0 auto; padding:0 20px 80px;
+  display:grid; grid-template-columns:260px 1fr; gap:28px; align-items:start}
+.layout > main{padding-top:24px}
+
+/* sidebar：sticky top 对齐 appbar 实际高度，顶端固定不随右侧滚动而移动。
+   padding-top 把 Boss 列表与 appbar 底边框拉开间距（padding 不影响 sticky 位置）。 */
+.sidebar{position:sticky; top:var(--appbar-h); align-self:start;
+  max-height:calc(100vh - var(--appbar-h) - 16px); overflow:auto;
+  padding:14px 6px 0; scrollbar-width:thin}
+.side-group{margin-bottom:22px}
+.side-group h4{font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; color:var(--text-dim);
+  padding:0 10px 8px; display:flex; align-items:center; gap:8px}
+.side-group h4 .wing-dot{width:10px;height:10px;border-radius:3px}
+.navlink{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:9px;
+  color:var(--text-muted); font-size:.9rem; transition:.13s; border:1px solid transparent}
+.navlink:hover{background:var(--surface); color:var(--text)}
+.navlink.active{background:var(--surface-2); color:var(--text); border-color:var(--border)}
+.navlink .code{font-family:Oswald; font-weight:600; font-size:.78rem; padding:2px 7px; border-radius:6px;
+  background:var(--surface-3); color:var(--text); flex:0 0 auto}
+.navlink .nm{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.navlink .cnt{margin-left:auto; font-size:.72rem; color:var(--text-dim)}
+
+/* hero */
+.hero{position:relative; border-radius:var(--radius); overflow:hidden; padding:42px 38px; margin-bottom:34px;
+  background:
+    radial-gradient(900px 380px at 12% -20%, rgba(79,217,154,.18), transparent 60%),
+    radial-gradient(700px 360px at 95% 120%, rgba(76,196,255,.12), transparent 60%),
+    linear-gradient(180deg,var(--surface),var(--bg-2));
+  border:1px solid var(--border)}
+.hero::after{content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.25))}
+.hero h1{font-size:clamp(2rem,1.3rem+3vw,3.3rem); line-height:1.05; letter-spacing:.01em}
+.hero .sub{color:var(--text-muted); margin-top:10px; max-width:64ch}
+.hero .stats{display:flex; gap:14px; flex-wrap:wrap; margin-top:24px; position:relative}
+.stat{background:rgba(0,0,0,.28); border:1px solid var(--border); border-radius:12px; padding:12px 18px; min-width:96px}
+.stat b{display:block; font-family:Oswald; font-size:1.7rem; color:var(--toxic); line-height:1}
+.stat span{font-size:.78rem; color:var(--text-dim); letter-spacing:.08em}
+.legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:22px; position:relative}
+.legend .li{display:flex; align-items:center; gap:7px; font-size:.8rem; color:var(--text-muted)}
+.legend .li .dot{width:11px;height:11px;border-radius:50%}
+
+/* hub boss grid */
+.bossgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; margin-top:6px}
+.bosscard{display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; overflow:hidden;
+  background:linear-gradient(180deg,var(--surface),var(--bg-2)); transition:.18s}
+.bosscard:hover{transform:translateY(-3px); border-color:var(--toxic-line); box-shadow:var(--shadow)}
+.bc-cover{position:relative; aspect-ratio:16/9; background:var(--surface-2); overflow:hidden}
+.bc-cover img{width:100%; height:100%; object-fit:cover; display:block}
+.bc-cover .gridph-empty{width:100%; height:100%; display:grid; place-items:center; font-size:1.8rem; opacity:.35}
+.bc-img{position:absolute; right:10px; bottom:10px; background:rgba(0,0,0,.6); color:#dff; font-size:.72rem;
+  padding:3px 9px; border-radius:999px}
+.bc-body{padding:14px 16px; display:flex; flex-direction:column; gap:6px}
+.bc-top{display:flex; align-items:center; gap:8px}
+.bc-no{font-family:Oswald; font-weight:700; font-size:1.3rem; color:var(--toxic)}
+.bc-mythic{margin-left:auto; color:var(--danger); font-size:.95rem}
+.bc-name{font-size:1.08rem; font-weight:600}
+.bc-count{font-size:.78rem; color:var(--text-dim)}
+
+/* boss detail */
+.back{display:inline-flex; align-items:center; gap:6px; color:var(--text-muted); font-size:.85rem;
+  margin-bottom:16px; transition:.15s}
+.back:hover{color:var(--toxic)}
+.boss{scroll-margin-top:86px; margin-bottom:10px}
+.boss-head{display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:16px 18px; border-radius:var(--radius); border:1px solid var(--border);
+  background:linear-gradient(180deg,var(--surface-2),var(--surface)); position:relative; overflow:hidden}
+.boss-head::before{content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--toxic)}
+.boss-head .bcode{font-family:Oswald; font-weight:700; font-size:1.5rem; padding:6px 14px; border-radius:10px;
+  background:var(--surface-3); color:var(--toxic); flex:0 0 auto}
+.boss-head .bname{font-size:1.25rem}
+.boss-head .bcnt{margin-left:auto; font-size:.82rem; color:var(--text-muted)}
+.boss-head .bcnt b{color:var(--text); font-family:Oswald}
+.boss-head .bmythic{font-size:.74rem; letter-spacing:.05em; color:#fff;
+  background:var(--danger); padding:4px 11px; border-radius:999px; font-weight:600;
+  display:inline-flex; align-items:center; gap:5px}
+
+/* pager (prev/next boss) */
+.pager-row{display:flex; justify-content:space-between; gap:16px; margin-top:34px; flex-wrap:wrap}
+.pager{flex:1 1 0; min-width:200px; border:1px solid var(--border); border-radius:12px; padding:14px 18px;
+  background:var(--surface); display:flex; flex-direction:column; gap:3px; transition:.15s}
+.pager:hover{border-color:var(--toxic-line); background:var(--surface-2)}
+.pager.next{text-align:right; align-items:flex-end}
+.pager .pl{font-size:.74rem; color:var(--text-dim); letter-spacing:.1em; text-transform:uppercase}
+.pager .pn{font-size:1.02rem; font-weight:600; color:var(--text)}
+
+/* group */
+.group{margin-top:20px}
+.group-head{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  background:var(--surface); border:1px solid var(--border); border-radius:11px;
+  padding:11px 14px; color:var(--text); transition:.13s}
+.group-head:hover{background:var(--surface-2)}
+.group-head .gt{font-size:1rem; font-weight:600}
+.group-head .gcnt{font-size:.76rem; color:var(--text-dim); margin-left:auto}
+.group-head .chev{transition:transform .2s; color:var(--text-dim)}
+.group.collapsed .chev{transform:rotate(-90deg)}
+.group.collapsed .gbody{display:none}
+.gbody{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; margin-top:14px}
+
+/* ability card */
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:15px 16px; display:flex; flex-direction:column; gap:10px; position:relative; transition:.15s}
+.card:hover{border-color:var(--toxic-line); transform:translateY(-2px); box-shadow:var(--shadow)}
+.card .top{display:flex; align-items:flex-start; gap:10px}
+.card .num{flex:0 0 auto; width:30px; height:30px; border-radius:8px; display:grid; place-items:center;
+  font-family:Oswald; font-weight:700; font-size:.95rem; background:var(--surface-3); color:var(--gold)}
+.card .name{flex:1; font-weight:600; font-size:1.02rem; line-height:1.35; min-width:0}
+.card .tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:2px}
+.tag{font-size:.7rem; padding:2px 9px; border-radius:999px; font-weight:600; letter-spacing:.02em;
+  border:1px solid transparent}
+.tag.英雄专属{background:rgba(76,196,255,.16); color:var(--arcane); border-color:rgba(76,196,255,.4)}
+.tag.史诗专属{background:rgba(255,93,108,.16); color:var(--danger); border-color:rgba(255,93,108,.4)}
+.tag.可打断{background:rgba(244,162,97,.16); color:var(--amber); border-color:rgba(244,162,97,.4)}
+.tag.可驱散{background:rgba(177,140,255,.16); color:var(--purple); border-color:rgba(177,140,255,.4)}
+.tag.打坦{background:rgba(255,138,76,.16); color:var(--orange); border-color:rgba(255,138,76,.4)}
+.tag.特殊{background:rgba(255,111,174,.16); color:var(--pink); border-color:rgba(255,111,174,.4)}
+/* 小怪分组大卡片：占满整行，施放者作为标题，本体技能作为子卡嵌在里面 */
+.mob-card{
+  grid-column:1 / -1;
+  background:var(--surface); border:1px solid var(--border);
+  border-left:4px solid var(--amber);
+  border-radius:var(--radius); padding:14px 16px 16px;
+  display:flex; flex-direction:column; gap:12px}
+.mob-card .mob-head{display:flex; align-items:center; gap:9px; align-self:flex-start;
+  margin:0; padding:7px 14px; border-radius:9px;
+  background:linear-gradient(180deg,rgba(244,162,97,.2),rgba(244,162,97,.07));
+  border:1px solid rgba(244,162,97,.45); color:var(--amber);
+  font-weight:700; font-size:1.05rem; letter-spacing:.02em}
+.mob-card .mob-head .mob-ico{font-size:1.2rem; line-height:1}
+.mob-card .mob-head .mob-cap{font-size:.74rem; font-weight:400; color:var(--text-muted); margin-left:4px}
+.mob-card .mob-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px}
+.card .desc{font-size:.9rem; color:var(--text-muted); white-space:pre-wrap; line-height:1.62}
+.card .counter{background:var(--toxic-soft); border-left:3px solid var(--toxic);
+  border-radius:0 8px 8px 0; padding:10px 12px; font-size:.9rem; color:var(--text)}
+.card .counter .clabel{display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--toxic);
+  font-size:.78rem; letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px}
+.card .counter.empty{background:var(--surface-2); border-left-color:var(--border); color:var(--text-dim)}
+
+/* timeline (phase duration groups) */
+.gbody.tl{display:block; margin-top:12px}
+.timeline{position:relative}
+.tl-phase{margin:18px 0 6px; padding:3px 0 3px 12px; font-family:Oswald; font-weight:600;
+  font-size:.98rem; letter-spacing:.04em; color:var(--toxic);
+  border-left:3px solid var(--toxic)}
+.tl-phase:first-child{margin-top:4px}
+.tl-item{display:grid; grid-template-columns:62px 26px 1fr; align-items:stretch}
+.tl-time{font-family:Oswald; font-weight:600; font-size:.95rem; color:var(--toxic);
+  text-align:right; padding:13px 12px 13px 0; white-space:nowrap}
+.tl-axis{position:relative; display:flex; justify-content:center}
+.tl-axis::before{content:""; position:absolute; top:0; bottom:0; left:50%;
+  width:2px; transform:translateX(-50%); background:var(--border)}
+.tl-dot{position:relative; z-index:1; width:12px; height:12px; border-radius:50%;
+  background:var(--toxic); margin-top:18px; flex:0 0 auto; box-shadow:0 0 0 4px var(--bg)}
+.tl-item:first-child .tl-axis::before{top:20px}
+.tl-item:last-child .tl-axis::before{bottom:calc(100% - 20px)}
+.tl-body{background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:11px 14px; margin:6px 0; display:flex; flex-direction:column; gap:4px; transition:.15s}
+.tl-skill{font-weight:600; font-size:1rem; line-height:1.35; display:flex;
+  align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.tl-skill .tl-skill-name{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.tl-note{font-size:.84rem; color:var(--text-muted); line-height:1.5}
+/* 「其他」列内容：与技能名同一行、靠右对齐，不另起行、不显示「其他」标签 */
+.tl-other{text-align:right; font-size:.82rem; color:var(--text-muted); line-height:1.5;
+  margin-left:auto; flex:0 1 auto; min-width:0}
+.tl-item:hover .tl-body{border-color:var(--toxic-line); background:var(--surface-2)}
+
+/* mythic-exclusive group accent */
+.group.mythic .group-head{border-color:rgba(255,93,108,.5);
+  background:linear-gradient(180deg,rgba(255,93,108,.12),var(--surface))}
+.group.mythic .gt{color:var(--danger)}
+.group.mythic .gcnt{color:var(--danger)}
+
+.empty-state{text-align:center; padding:60px 20px; color:var(--text-dim)}
+.empty-state b{color:var(--text-muted)}
+
+footer{max-width:var(--maxw); margin:0 auto; padding:24px 20px 50px; color:var(--text-dim); font-size:.8rem;
+  border-top:1px solid var(--border-soft); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+.totop{position:fixed; right:22px; bottom:22px; z-index:30; width:46px; height:46px; border-radius:50%;
+  background:var(--surface-2); border:1px solid var(--border); color:var(--text); display:grid; place-items:center;
+  opacity:0; pointer-events:none; transition:.2s; box-shadow:var(--shadow)}
+.totop.show{opacity:1; pointer-events:auto}
+.totop:hover{border-color:var(--toxic-line); color:var(--toxic)}
+
+/* images: gallery + lightbox */
+.gallery{display:flex; gap:11px; flex-wrap:wrap; margin-top:16px}
+.gallery .ph{position:relative; width:168px; height:104px; border:1px solid var(--border);
+  border-radius:11px; overflow:hidden; cursor:zoom-in; background:var(--surface-2); flex:0 0 auto}
+.gallery .ph img{width:100%; height:100%; object-fit:cover; display:block; transition:.25s}
+.gallery .ph:hover img{transform:scale(1.07)}
+.gallery .ph .cap{position:absolute; left:0; right:0; bottom:0; font-size:.7rem; padding:4px 8px;
+  background:linear-gradient(transparent,rgba(0,0,0,.78)); color:#dff; letter-spacing:.04em}
+.lightbox{position:fixed; inset:0; z-index:90; background:rgba(4,6,10,.93); display:none;
+  align-items:center; justify-content:center; padding:28px; cursor:zoom-out}
+.lightbox.open{display:flex}
+.lightbox img{max-width:96%; max-height:94%; border-radius:10px; box-shadow:0 24px 70px rgba(0,0,0,.7)}
+.lightbox .lb-close{position:absolute; top:16px; right:22px; color:#fff; font-size:1.7rem;
+  background:none; border:none; cursor:pointer; line-height:1}
+
+.drawer-backdrop{display:none}
+@media (max-width:920px){
+  .layout{grid-template-columns:1fr}
+  .menu-btn{display:inline-flex}
+  .sidebar{position:fixed; top:0; left:0; bottom:0; width:280px; max-height:none; z-index:60;
+    background:var(--bg-2); border-right:1px solid var(--border); padding:18px 14px; transform:translateX(-105%);
+    transition:transform .25s ease; box-shadow:var(--shadow)}
+  .sidebar.open{transform:none}
+  .drawer-backdrop.show{display:block; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:55}
+  .gbody{grid-template-columns:1fr}
+  .appbar-inner{padding:10px 14px}
+  .search{order:3; flex-basis:100%; max-width:none}
+}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <button class="menu-btn" id="menuBtn" aria-label="打开 Boss 列表">☰ 列表</button>
+    <a class="brand" id="brandLink" href="#">
+      <div class="crest">圣</div>
+      <div>
+        <div class="t1">圣糖刺客 · 12.1 团本攻略</div>
+        <div class="t2">Raid Strategy Compendium</div>
+      </div>
+    </a>
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a4b6" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="search" type="search" placeholder="搜索技能 / 机制 / 应对…" autocomplete="off">
+    </div>
+  </div>
+  <div class="filters">
+    <span class="lbl">标签筛选</span>
+    <div class="chips" id="chips">
+      <button class="chip active" data-tag="全部"><span class="dot" style="background:var(--toxic)"></span>全部</button>
+      <button class="chip" data-tag="英雄专属"><span class="dot" style="background:var(--arcane)"></span>英雄专属</button>
+      <button class="chip" data-tag="史诗专属"><span class="dot" style="background:var(--danger)"></span>史诗专属</button>
+      <button class="chip" data-tag="可打断"><span class="dot" style="background:var(--amber)"></span>可打断</button>
+      <button class="chip" data-tag="可驱散"><span class="dot" style="background:var(--purple)"></span>可驱散</button>
+      <button class="chip" data-tag="打坦"><span class="dot" style="background:var(--orange)"></span>打坦</button>
+      <button class="chip" data-tag="特殊"><span class="dot" style="background:var(--pink)"></span>特殊</button>
+    </div>
+    <button class="reset" id="resetBtn">重置</button>
+  </div>
+</header>
+
+<div class="drawer-backdrop" id="backdrop"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Boss 导航"></nav>
+  <main>
+    <section class="hero">
+      <h1>圣糖刺客 12.1 团本全攻略</h1>
+      <p class="sub">把密密麻麻的表格变成一眼就能读懂的实战手册。点进任意 Boss 看它的全部技能、时间轴与战术截图；M 难度的史诗专属机制已附在各 Boss 末尾。</p>
+      <div class="stats" id="heroStats"></div>
+      <div class="legend">
+        <div class="li"><span class="dot" style="background:var(--toxic)"></span>时间轴＝持续分组的整场时间线</div>
+        <div class="li"><span class="dot" style="background:var(--arcane)"></span>蓝色＝普通难度没有的技能（英雄专属）</div>
+        <div class="li"><span class="dot" style="background:var(--danger)"></span>红色＝史诗难度专属（M 追加）</div>
+        <div class="li"><span class="dot" style="background:var(--amber)"></span>可打断 / <span class="dot" style="background:var(--purple)"></span>可驱散 / <span class="dot" style="background:var(--orange)"></span>打坦</div>
+      </div>
+    </section>
+    <div id="content"></div>
+  </main>
+</div>
+
+<button class="totop" id="totop" aria-label="回到顶部">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="lb-close" id="lbClose" aria-label="关闭">✕</button>
+  <img id="lbImg" src="" alt="放大查看">
+</div>
+
+<footer>
+  <span>数据来源：圣糖刺客12.1团本攻略.xlsx（已合并 H/M 难度，M 史诗专属技能附于各 Boss 末尾）</span>
+  <span id="genDate"></span>
+</footer>
+
+<script>
+const ASSET = "../";
+const NAV = "";
+const HUB = "../index.html";
+const SIDEBAR = [{"code": "H1", "no": 1, "name": "内克扎莉", "count": 51, "mythic": true, "mythicN": 1, "imgCount": 2, "cover": "image2.png"}, {"code": "H2", "no": 2, "name": "乌拉特克之息", "count": 68, "mythic": true, "mythicN": 1, "imgCount": 4, "cover": "image7.png"}, {"code": "H3议会", "no": 3, "name": "三贤者议会", "count": 157, "mythic": false, "mythicN": 0, "imgCount": 4, "cover": "image8.png"}, {"code": "H4", "no": 4, "name": "瓦什尼克", "count": 84, "mythic": true, "mythicN": 1, "imgCount": 1, "cover": "image12.png"}, {"code": "H5", "no": 5, "name": "斯索拉克", "count": 51, "mythic": true, "mythicN": 1, "imgCount": 2, "cover": "image13.png"}, {"code": "H6", "no": 6, "name": "维克苏尔", "count": 109, "mythic": true, "mythicN": 2, "imgCount": 1, "cover": "image15.png"}, {"code": "H7", "no": 7, "name": "祖尔加", "count": 116, "mythic": false, "mythicN": 0, "imgCount": 4, "cover": "image16.png"}, {"code": "H8", "no": 8, "name": "乌拉特克（蛇母）", "count": 37, "mythic": false, "mythicN": 0, "imgCount": 0, "cover": null}, {"code": "M潮缚", "no": 9, "name": "尼姆瑞莎·潮缚", "count": 6, "mythic": false, "mythicN": 0, "imgCount": 1, "cover": "image1.png"}];
+const BOSS = {"code": "H7", "groups": [{"name": "P1", "abilities": [{"num": "1", "mob": "", "skill": "盘卷祭坛之牙", "raw": "盘卷祭坛之牙", "desc": "祖尔加引导盘卷祭坛的力量，对所有玩家造成6w点自然伤害，并在8秒内每1秒获得3层双牙毒素。盘卷祭坛的巨口满溢，在下方喷吐出剧毒之地;这些毒液会迅速膨胀，再随时间慢慢消退。\n双牙毒素\n祖尔加的近战攻击会消耗双牙毒素的层数，对当前目标额外造成247,175点自然伤害。\n剧毒之地\n剧毒之地每1秒对身处其中的玩家造成123.587点自然伤害。", "counter": "场地两侧出地板水，然后慢慢消失。第二次会变得更大，第三次则快占满整个场地，仅有很小的立锥之地。", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "剧毒洪流", "raw": "剧毒洪流", "desc": "熔炉向场地喷吐毒液，对冲击点4码内的玩家造成40w点自然伤害，并生成凝结的毒液\n凝结的毒液\n一团脉动的毒性液滴，每2秒对所有玩家造成1w点自然伤害。被摧毁时触发毒液爆裂\n踩中液滴会使其附着在玩家身上，并施加烈性毒液。\n毒液爆裂\n毒液团爆炸，每2秒对所有玩家造成3w7点自然伤害，持续10秒。该效果可叠加\n在英雄难度下，毒液爆裂会造成持续伤害，且该效果可以叠加。\n烈性毒液\n乌拉特克的毒液与玩家发生剧烈的反应，每1秒对5码内的玩家造成61.794点自然伤害，效果结束时，会产生一团凝结的毒液。", "counter": "每次出7个球，需要安排3个人+1坦克运到坦克头前，用劈刀劈掉。BOSS打进P2则会强制消掉场上所有的球并叠加对应的层数。", "tags": [], "time": ""}, {"num": "3", "mob": "", "skill": "处斩", "raw": "处斩", "desc": "祖尔加向一名玩家掷出巨斧，对目标周围9码内的玩家均摊185万点物理伤害，并使其受到处斩的伤害提供500%，持续1.7分钟，此效果无视护甲。巨斧随机膨胀爆发寡妇之吻。\n若处斩未能击中至少5名玩家，巨斧改为引发处决。\n在英雄难度下，处斩会使受到的处斩伤害提高500%。\n处决\n对所有玩家造成926,908点自然伤害。\n寡妇之吻\n战斧在猛烈的爆炸中喷射出致命的毒素，对50码范围内的玩家造成494351点自然伤害\n寡妇之触\n猛烈的爆炸对距离中心至少50码范围外的所有玩家造成15w点自然伤害。", "counter": "读条3.5秒。安排6个人分担，其他人把球运到对面。分担完毕，会产生一个大圈，大圈内被砸中很容易被秒杀，大圈外则是安全的15w伤害。", "tags": [], "time": ""}, {"num": "4", "mob": "", "skill": "撕裂", "raw": "撕裂（打坦技）", "desc": "祖尔加对当前目标发出强力顺劈，对前方锥形范围内的玩家造成247万点物理伤害，并使其受到撕裂的伤害提高200%，持续30秒，并摧毁凝结的毒液。", "counter": "读条3秒，一层换T，消球", "tags": ["打坦"], "time": ""}, {"num": "5", "mob": "", "skill": "毒牙（驱毒）", "raw": "毒牙（驱毒）", "desc": "祖尔加在多名玩家之问掷出一把淬毒战斧，每2秒造成9w点自然伤害，持续14秒。", "counter": "读条2秒。每次盘卷祭坛之牙BOSS会获得毒牙，然后打到坦克身上，给坦克驱毒。", "tags": [], "time": ""}, {"num": "6", "mob": "", "skill": "碎斧", "raw": "碎斧", "desc": "祖尔加扔出飞斧，对冲击点4码内的玩家造成43w物理并将其击退，飞斧会在场上游荡，持续1分钟，每0.25秒对5码范围内的玩家造成77w物理伤害，此效果无视护甲。", "counter": "读条2秒。躲开即可", "tags": [], "time": ""}], "timeline": false}, {"name": "P2", "abilities": [{"num": "1", "mob": "", "skill": "恐惧行军", "raw": "恐惧行军", "desc": "玛拉卡斯附身多名玩家，使其获得可吸收49w点伤害的护盾，同时走向平台边缘并跳下去送死。\n效果移除时，2惧具象会从被附身的玩家体内现身。\n恐惧具象\n一个骇人的实体凝聚成形，并死死盯住一名玩家。\n令人不安的凝视\n一名恐惧具象会死死盯住一名随机玩家并在该玩家没有与它对视时向其移动\n如果它碰到了目标，它会用恐惧行军附身这个玩家。\n在英雄难度下，恐惧具象在触碰目标时会施加恐惧行军。", "counter": "读条2秒。类似牧师心控玩家，自动往最近的悬崖跳崖，所以技能前大家需要跟boss集合。猎人给减速，DK帮忙单拉，DKT给冰链。所有人第一时间转火，转火完毕，会产生两个无法选中的小怪玩321木头人盯人，被点名的玩家背对他们将他们带到头前，然后正对他们即可。\n如果被木头人追上，则被心控。", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "灵魂撕裂", "raw": "灵魂撕裂", "desc": "玛拉卡斯向当前目标释放暗影冲击，对前方锥形范围内的玩家造成49w点暗影伤害。使其受到灵魂撕裂的伤害提高200%，并在36秒内每2秒造成9w点暗影伤害。被击中的玩家还会受到墓缚的影响。\n该技能用于摧毁恐惧具象。\n墓缚\n玩家的灵魂处于碎裂状态，直到其灵魂残片被收回。踩到残片可收回部分灵魂，并造成154,485点暗影伤害。\n效果结束时，该玩家将不复存在。\n灵魂残片\n玩家灵魂的残片，会在15秒内逐渐消散。", "counter": "读条4秒，坦克劈刀消掉恐惧具象。\n坦克会获得3个碎片，15秒内吃完，不吃完则会死亡。类似11.2的M5碎片和M7的白色碎片。", "tags": [], "time": ""}, {"num": "3", "mob": "", "skill": "永恒夜幕", "raw": "永恒夜幕", "desc": "玛拉卡斯用幕光之帷将自己包裹，准备释放一次毁灭性的攻击，对所有玩家造成185万点暗影伤害，并每1秒额外造成30w点暗影伤害\n幕光降临在竞技场周围，对每个冲击点5码范围内的玩家施加额外的室息黑暗层数。如果护盾被打破，该法术就可以被打断。\n暮光之帷\n黑暗环绕着玛拉卡斯，吸收741万点伤害，并每2秒对所有玩家施加室息黑暗\n室息黑暗\n用暗影包裹玩家，吸收接下来的9w点治疗量。此效果可叠加。", "counter": "持续施法15秒。破盾的时候躲好地板圈。", "tags": [], "time": ""}, {"num": "4", "mob": "", "skill": "精魂狂笑", "raw": "精魂狂笑", "desc": "玛拉卡斯召唤精魂显现出一个怨毒盘魂者来协助他战斗。\n怨毒盘魂者\n恐惧哀嚎\n发出恐怖的尖叫，使所有玩家恐惧，持续5秒\n报复恶念\n重新苏醒的精魂对活物怀有怨恨，释放黑暗能量冲击，每3秒对随机玩家造成185,381点暗影伤害\n被怨恨吞噬\n能量达到100点时，怨毒盘魂者会被仇恨吞噬，免疫打断效果。", "counter": "第一时间将BOSS带过去转火击杀，安排两个两个dps卡秒打断。萨满可以点战栗图腾以防万一。", "tags": ["英雄专属"], "time": ""}, {"num": "5", "mob": "", "skill": "幽暗炸弹", "raw": "幽暗炸弹", "desc": "玛拉卡斯为玩家注入暗影并标记，持续5秒效果结束时爆炸，对15码内的玩家造成37w点暗影伤害。被击中的玩家还会受到墓缚的影响\n基缚\n玩家的灵魂处于碎裂状态，直到其灵魂残片被收回。踩到残片可收回部分灵魂，并造成154.485点暗影伤害。\n效果结束时，该玩家将不复存在。\n灵魂残片\n玩家灵魂的残片，会在15秒内逐渐消散", "counter": "读条2秒，持续5秒后爆炸。跟坦克一样，需要找自己的3个白色碎片。", "tags": [], "time": ""}, {"num": "6", "mob": "", "skill": "恐惧箭", "raw": "恐惧箭（打坦）", "desc": "玛拉卡斯发射一枚暗影箭，对他的主要目标造\n成154.485点暗影伤害。", "counter": "", "tags": ["打坦"], "time": ""}, {"num": "7", "mob": "", "skill": "恐惧威仅", "raw": "恐惧威仅", "desc": "玛拉卡斯散发出骇人的光环，每2秒对所有玩家造成9w点暗影伤害。", "counter": "", "tags": [], "time": ""}], "timeline": false}, {"name": "P2.5", "abilities": [{"num": "1", "mob": "", "skill": "灵魂绑定", "raw": "灵魂绑定", "desc": "玛拉卡斯开始将灵魂与祖尔加绑定的仅式，向祖尔加施加惊惧再生。祖尔加受到的任何治疗都会复制给玛拉卡斯。仪式持续期问，玛拉卡斯的碎片会从祖尔加体内爆裂而出，并试图回到新的宿主身边。", "counter": "P2BOSS免疫，P1的BOSS100%易伤。两个BOSS最后血量相等。", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "惊惧再生", "raw": "惊惧再生", "desc": "死疽能量淹没了祖尔加，在35秒内每1秒恢复最大生命值的2%。\n这个极度不稳定的过程对他的身体造成了损害，使他受到的伤害增加100%", "counter": "类似12.1M7龙的易伤，需要爆发和YY将伤害打满。", "tags": [], "time": ""}, {"num": "3", "mob": "", "skill": "玛拉卡斯残片", "raw": "玛拉卡斯残片", "desc": "玛拉卡斯的残片正试图与新宿主重新融合\n精魂抹除\n在被踩踏时，残片会被猛烈地抹除，对所有玩家造成9w点暗影伤害\n收回精华\n残片抵达祖尔加身边，为其恢复最大生命值的3%。", "counter": "需要安排4轮减伤来覆盖35秒，同时安排两个残片开关将爆炸的9w伤害平均分布。其他人则是脚下集合守门。", "tags": [], "time": ""}, {"num": "4", "mob": "", "skill": "亡灵卫兵", "raw": "亡灵卫兵", "desc": "玛拉卡斯被灾祸能量环绕，吸收任何昏述的恐惧具象，并使受到的伤害降低99%。", "counter": "P2的BOSS免疫伤害", "tags": [], "time": ""}], "timeline": false}, {"name": "P3", "abilities": [{"num": "", "mob": "共同技能", "skill": "灵魂绑定", "raw": "灵魂绑定", "desc": "玛拉卡斯和祖尔加将彼此的灵魂链接在了一起，如果其中一方被击败，另一方就会狂暴使其攻击速度和造成的伤害每5秒提高100%。", "counter": "P3是双目标", "tags": [], "time": ""}], "timeline": false}, {"name": "祖尔加", "abilities": [{"num": "1", "mob": "", "skill": "盘卷祭坛亵渎", "raw": "盘卷祭坛亵渎", "desc": "祖尔加亵渎盘卷祭坛，使所有玩家获得可吸收下一次64w点治疗的屏障，并在8秒内每1秒获得3层腐化毒素。\n盘卷祭坛的巨口满溢，在下方喷吐出袭渎大地;这些毒液会迅連膨胀，再随时间慢慢消散。\n腐化毒素\n祖尔加的近战攻击会消耗腐化毒素的层数，在6秒内每秒造成3w点暗影伤害，此效果可以叠加。\n袭渎大地\n腐化的地面会使站在其中的玩家每1秒吸收8w点治疗量。", "counter": "跟P1的盘卷祭坛之牙是一样的", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "剧毒洪流", "raw": "剧毒洪流", "desc": "同P1", "counter": "", "tags": [], "time": ""}, {"num": "3", "mob": "", "skill": "冷酷处斩", "raw": "冷酷处斩", "desc": "祖尔加向一名玩家掷出巨斧，对目标周围9码内的玩家均摊185万点暗影伤害，使其受到冷酷处斩的伤害提高500%，持续2分钟，并吸收下一次481,992点治疗。巨斧随即因死灵能量膨胀，并爆发死亡之拥。\n若冷酷处斩未能击中至少5名玩家，巨斧改为引发冷酷处斩。\n冷酷处斩\n对所有玩家造成92w点暗影伤害\n死亡之拥\n巨斧爆发出狂暴的尖啸灵魂洪流，对50码范围内的玩家造成49w点暗影伤害。\n死亡低语\n附近的爆炸对距离爆炸中心至少50码的玩家造成15w点暗影伤害。", "counter": "跟P1的处斩一样，但是伤害从185w物理变成185w暗影，所以需要给分担的6个人反魔法领域或者黑雾。", "tags": ["英雄专属"], "time": ""}, {"num": "4", "mob": "", "skill": "凋零撕裂", "raw": "凋零撕裂", "desc": "祖尔加对当前目标发出毁灭性顺劈，对前方锥形范围内的玩家造成61w点暗影伤害。使其受到凋零撕裂的伤害提高200%，持续45秒并施加墓缚。\n该技能摧毁凝结的毒液和恐惧具象。\n墓缚\n玩家的灵魂处于碎裂状态，直到其灵魂残片被收回。踩到残片可收回部分灵魂，并造成15w点暗影伤害。\n效果结束时，该玩家将不复存在。\n灵魂残片\n玩家灵魂的残片，会在15秒内逐渐消散", "counter": "P1和P2劈刀的组合，既能劈球又能劈木头人恐惧具象。", "tags": [], "time": ""}], "timeline": false}, {"name": "玛拉卡斯", "abilities": [{"num": "1", "mob": "", "skill": "恐惧行军", "raw": "恐惧行军", "desc": "同P2", "counter": "", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "永恒夜幕", "raw": "永恒夜幕", "desc": "同P2", "counter": "", "tags": [], "time": ""}, {"num": "3", "mob": "", "skill": "幽魂炸弹", "raw": "幽魂炸弹", "desc": "同P2", "counter": "", "tags": ["英雄专属"], "time": ""}, {"num": "4", "mob": "", "skill": "恐惧箭", "raw": "恐惧箭", "desc": "同P2", "counter": "", "tags": [], "time": ""}], "timeline": false}, {"name": "时间轴", "timeline": true, "isMythic": false, "abilities": [{"phase": "P1持续3分08秒", "num": "", "time": "0:00", "skill": "盘卷祭坛之牙1", "raw": "盘卷祭坛之牙1", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "0:12", "skill": "碎斧", "raw": "碎斧", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "0:20", "skill": "撕裂", "raw": "撕裂", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "0:28", "skill": "毒牙", "raw": "毒牙", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "0:37", "skill": "撕裂", "raw": "撕裂", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "0:43", "skill": "处斩1", "raw": "处斩1", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "0:57", "skill": "撕裂", "raw": "撕裂", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "1:03", "skill": "毒牙", "raw": "毒牙", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "1:14", "skill": "撕裂", "raw": "撕裂", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "1:20", "skill": "盘卷祭坛之牙2", "raw": "盘卷祭坛之牙2", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "1:32", "skill": "碎斧", "raw": "碎斧", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "1:40", "skill": "撕裂", "raw": "撕裂", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "1:48", "skill": "毒牙", "raw": "毒牙", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "1:57", "skill": "撕裂", "raw": "撕裂", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "2:03", "skill": "处斩2", "raw": "处斩2", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "2:17", "skill": "撕裂", "raw": "撕裂", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "2:23", "skill": "毒牙", "raw": "毒牙", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "2:34", "skill": "撕裂", "raw": "撕裂", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "2:40", "skill": "盘卷祭坛之牙3", "raw": "盘卷祭坛之牙3", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "2:52", "skill": "碎斧", "raw": "碎斧", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P1持续3分08秒", "num": "", "time": "3:08", "skill": "恐惧威仪", "raw": "恐惧威仪", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:14", "skill": "恐惧行军1", "raw": "恐惧行军1", "desc": "", "counter": "转火慢或者没提前集合到脚下会跳崖死亡", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:21", "skill": "精魂狂笑", "raw": "精魂狂笑", "desc": "", "counter": "小怪出现，21秒后劈刀，在劈刀之前需要击杀", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:23", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:23", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:23", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:23", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:25", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:25", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:26", "skill": "报复恶念", "raw": "报复恶念", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:26", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:26", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:27", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:27", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:27", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:28", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:30", "skill": "幽暗炸弹", "raw": "幽暗炸弹", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:32", "skill": "幽暗炸弹", "raw": "幽暗炸弹", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:42", "skill": "灵魂撕裂1", "raw": "灵魂撕裂1", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:50", "skill": "恐惧行军2", "raw": "恐惧行军2", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:51", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:51", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:52", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:52", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:52", "skill": "恐惧行军3", "raw": "恐惧行军3", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:53", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:53", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:54", "skill": "精魂狂笑", "raw": "精魂狂笑", "desc": "", "counter": "小怪出现", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "3:59", "skill": "报复恶念", "raw": "报复恶念", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:03", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:03", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:04", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:04", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:04", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:04", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:04", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:05", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:05", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:05", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:05", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:07", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:08", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:08", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:08", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:08", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:08", "skill": "幽暗炸弹", "raw": "幽暗炸弹", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:09", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:10", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:10", "skill": "幽暗炸弹", "raw": "幽暗炸弹", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:13", "skill": "灵魂撕裂2", "raw": "灵魂撕裂2", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:15", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:15", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:16", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:16", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:16", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:17", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:18", "skill": "永恒夜幕", "raw": "永恒夜幕", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:27", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:27", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:27", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:27", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:29", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:29", "skill": "令人不安的凝视", "raw": "令人不安的凝视", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:33", "skill": "永恒夜幕", "raw": "永恒夜幕", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:39", "skill": "恐惧行军4", "raw": "恐惧行军4", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:41", "skill": "恐惧行军5", "raw": "恐惧行军5", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:42", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:42", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:43", "skill": "无懈可击", "raw": "无懈可击", "desc": "", "counter": "", "tags": [], "mob": ""}, {"phase": "P2", "num": "", "time": "4:43", "skill": "恐惧具象", "raw": "恐惧具象", "desc": "", "counter": "", "tags": [], "mob": ""}]}], "images": ["image16.png", "image17.png", "image18.png", "image19.png"], "name": "祖尔加", "no": 7};
+const STATS = {"bosses": 9, "total": 679, "mythic": 6};
+
+const state = { q:"", tags:new Set() };
+
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function tagBadges(tags){ return (tags||[]).map(t=>`<span class="tag ${t}">${t}</span>`).join(""); }
+function bossName(b){ return (b && b.name) ? b.name : (b && b.code) || ""; }
+
+function abilityCard(ab){
+  const hasCounter = ab.counter && ab.counter.trim() && ab.counter.trim()!=="None";
+  const counterHtml = hasCounter
+    ? `<div class="counter"><span class="clabel">⚔ 应对</span><div>${esc(ab.counter)}</div></div>`
+    : `<div class="counter empty"><span class="clabel">应对</span><div>暂无应对说明</div></div>`;
+  const num = ab.num && ab.num!=="None"
+    ? `<div class="num">${esc(ab.num)}</div>`
+    : `<div class="num" style="color:var(--text-dim)">·</div>`;
+  const txt = (ab.skill+' '+(ab.mob||'')+' '+ab.desc+' '+ab.counter+' '+(ab.tags||[]).join(' ')).toLowerCase();
+  return `<article class="card" data-text="${esc(txt)}">
+    <div class="top">${num}<div class="name">${esc(ab.skill)}<div class="tags">${tagBadges(ab.tags)}</div></div></div>
+    <div class="desc">${esc(ab.desc)}</div>
+    ${counterHtml}
+  </article>`;
+}
+
+// 普通分组：连续同「施放者(mob)」的技能聚成一个占满整行的大卡片，
+// 标题=施放者，技能作为子卡嵌在卡内；无 mob 的本体技能仍是普通卡。
+function groupBody(g, boss){
+  const abs = g.abilities.filter(passAbility);
+  let html = "";
+  let i = 0;
+  while(i < abs.length){
+    const ab = abs[i];
+    if(ab.mob && ab.mob.trim()){
+      const mobName = ab.mob.trim();
+      const members = [ab]; i++;
+      while(i < abs.length){
+        const nx = abs[i];
+        if((nx.mob||"").trim() !== mobName) break; // 回到本体技能或换了施放者，断开
+        members.push(nx); i++;
+      }
+      html += mobCard(mobName, members);
+    } else {
+      html += abilityCard(ab); i++; // 本体技能
+    }
+  }
+  return html;
+}
+
+function mobCard(mobName, members){
+  const inner = members.map(abilityCard).join("");
+  return `<div class="mob-card" data-text="${esc(mobName.toLowerCase())}">
+    <div class="mob-head"><span class="mob-ico">☣</span><span class="mob-name">${esc(mobName)}</span><span class="mob-cap">施放者 · ${members.length} 项</span></div>
+    <div class="mob-grid">${inner}</div>
+  </div>`;
+}
+
+// 时间轴：按阶段（phase）插入小标题
+function timelineBody(g){
+  let html=""; let curPhase=null;
+  for(const ab of g.abilities.filter(passAbility)){
+    if(ab.phase && ab.phase!==curPhase){
+      html += `<div class="tl-phase">${esc(ab.phase)}</div>`;
+      curPhase = ab.phase;
+    }
+    html += timelineItem(ab);
+  }
+  return html;
+}
+
+function timelineItem(ab){
+  const note = (ab.desc && ab.desc.trim() && ab.desc.trim()!=="None") ? ab.desc.trim() : "";
+  const other = (ab.counter && ab.counter.trim() && ab.counter.trim()!=="None") ? ab.counter.trim() : "";
+  const time = ab.time || "";
+  return `<div class="tl-item" data-text="${esc((ab.skill+' '+ab.desc+' '+(ab.counter||'')+' '+(ab.tags||[]).join(' ')).toLowerCase())}">
+    <div class="tl-time">${esc(time)}</div>
+    <div class="tl-axis"><span class="tl-dot"></span></div>
+    <div class="tl-body">
+      <div class="tl-skill">
+        <span class="tl-skill-name">${esc(ab.skill)}${tagBadges(ab.tags)}</span>
+        ${other?`<span class="tl-other">${esc(other)}</span>`:""}
+      </div>
+      ${note?`<div class="tl-note">${esc(note)}</div>`:""}
+    </div>
+  </div>`;
+}
+
+function passAbility(ab){
+  const q = state.q.trim().toLowerCase();
+  if(q){
+    const hay = (ab.skill+' '+ab.desc+' '+ab.counter+' '+(ab.tags||[]).join(' ')).toLowerCase();
+    if(!hay.includes(q)) return false;
+  }
+  if(state.tags.size){
+    const t = ab.tags||[];
+    let ok=false; for(const x of state.tags){ if(t.includes(x)){ok=true;break;} }
+    if(!ok) return false;
+  }
+  return true;
+}
+
+function groupHtml(g, boss){
+  const isTL = g.timeline;
+  const isMyth = g.isMythic;
+  const visible = g.abilities.filter(passAbility);
+  if(!visible.length) return "";
+  const body = isTL ? timelineBody(g) : groupBody(g, boss);
+  return `<section class="group ${isMyth?'mythic':''}" ${isTL?'id="timeline"':''} data-gname="${esc(g.name||'')}">
+    <button class="group-head" aria-expanded="true">
+      <span class="gt">${esc(g.name||'通用')}</span>
+      <span class="gcnt">${visible.length} 项</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="gbody ${isTL?'tl':''}">${body}</div>
+  </section>`;
+}
+
+function pagerHtml(boss){
+  const idx = SIDEBAR.findIndex(b=>b.code===boss.code);
+  if(idx<0) return "";
+  const prev = idx>0 ? SIDEBAR[idx-1] : null;
+  const next = idx<SIDEBAR.length-1 ? SIDEBAR[idx+1] : null;
+  const cell=(b,dir)=> b
+    ? `<a class="pager ${dir}" href="${NAV}${esc(b.code)}.html"><span class="pl">${dir==='prev'?'← 上一个':'下一个 →'}</span><span class="pn">${b.no}. ${esc(b.name)}</span></a>`
+    : `<span></span>`;
+  return `<div class="pager-row">${cell(prev,'prev')}${cell(next,'next')}</div>`;
+}
+
+function bossHtml(boss){
+  const total = boss.groups.reduce((s,g)=>s+g.abilities.length,0);
+  const mythic = boss.groups.find(g=>g.isMythic);
+  const mythicN = mythic ? mythic.abilities.length : 0;
+  const imgs = boss.images||[];
+  const gallery = imgs.length
+    ? `<div class="gallery">${imgs.map(f=>
+        `<div class="ph" data-full="${ASSET}assets/${esc(f)}"><img loading="lazy" src="${ASSET}assets/${esc(f)}" alt="战术截图"><span class="cap">战术截图</span></div>`
+      ).join("")}</div>`
+    : "";
+  return `<section class="boss">
+    <a class="back" href="${HUB}">← 返回总览</a>
+    <div class="boss-head">
+      <div class="bcode">${esc(boss.no)}</div>
+      <div class="bname">${esc(bossName(boss))}</div>
+      ${mythicN?`<span class="bmythic">⚑ 含史诗专属 ${mythicN}</span>`:""}
+      <span class="bcnt"><b>${total}</b> 项技能</span>
+      ${imgs.length?`<span class="boot-img">📷 <b>${imgs.length}</b> 图</span>`:""}
+    </div>
+    ${gallery}
+    ${boss.groups.map(g=>groupHtml(g, boss)).join("")}
+    ${pagerHtml(boss)}
+  </section>`;
+}
+
+function hubGrid(){
+  const cards = SIDEBAR.map(b=>{
+    const cover = b.cover
+      ? `<img src="${ASSET}assets/${esc(b.cover)}" alt="${esc(b.name)}">`
+      : `<div class="gridph-empty">📋</div>`;
+    return `<a class="bosscard" href="${NAV}${esc(b.code)}.html">
+      <div class="bc-cover">${cover}${b.imgCount?`<span class="bc-img">📷 ${b.imgCount}</span>`:""}</div>
+      <div class="bc-body">
+        <div class="bc-top"><span class="bc-no">${esc(b.no)}</span>${b.mythic?`<span class="bc-mythic">⚑</span>`:""}</div>
+        <div class="bc-name">${esc(b.name)}</div>
+        <div class="bc-count">${b.count} 项技能${b.mythicN?` · 史诗专属 ${b.mythicN}`:""} · ${b.imgCount} 图</div>
+      </div>
+    </a>`;
+  }).join("");
+  return `<div class="bossgrid">${cards}</div>`;
+}
+
+function buildSidebar(){
+  let h = `<div class="side-group"><h4><span class="wing-dot" style="background:var(--toxic)"></span>Boss 列表</h4>`;
+  for(const b of SIDEBAR){
+    const active = (BOSS && b.code===BOSS.code) ? " active" : "";
+    h += `<a class="navlink${active}" href="${NAV}${esc(b.code)}.html" data-code="${esc(b.code)}">
+      <span class="code">${esc(b.no)}</span>
+      <span class="nm">${esc(b.name)}</span>
+      ${b.mythic?`<span class="cnt" style="color:var(--danger)">⚑</span>`:""}
+      <span class="cnt">${b.count}</span></a>`;
+  }
+  h += `</div>`;
+  document.getElementById("sidebar").innerHTML = h;
+}
+
+function buildStats(){
+  const items = [
+    [STATS.bosses,"Boss 总数"],
+    [STATS.total,"技能条目"],
+    [STATS.mythic,"史诗专属 (M)"]
+  ];
+  document.getElementById("heroStats").innerHTML =
+    items.map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
+}
+
+function render(){
+  const content = document.getElementById("content");
+  const hero = document.querySelector(".hero");
+  const filters = document.querySelector(".filters");
+  if(BOSS){
+    hero.style.display = "none";
+    filters.style.display = "flex";
+    content.innerHTML = bossHtml(BOSS);
+  } else {
+    hero.style.display = "";
+    filters.style.display = "none";
+    content.innerHTML = hubGrid();
+  }
+  content.querySelectorAll(".group-head").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const grp = btn.closest(".group");
+      const collapsed = grp.classList.toggle("collapsed");
+      btn.setAttribute("aria-expanded", String(!collapsed));
+    });
+  });
+}
+
+// search + filters (apply to the current page's content)
+let deb;
+document.getElementById("search").addEventListener("input",e=>{
+  clearTimeout(deb);
+  deb=setTimeout(()=>{ state.q=e.target.value; render(); },120);
+});
+document.getElementById("chips").addEventListener("click",e=>{
+  const chip = e.target.closest(".chip"); if(!chip) return;
+  const tag = chip.dataset.tag;
+  if(tag==="全部"){
+    state.tags.clear();
+    document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active",c.dataset.tag==="全部"));
+    render(); return;
+  }
+  document.querySelector('.chip[data-tag="全部"]').classList.remove("active");
+  if(state.tags.has(tag)) state.tags.delete(tag); else state.tags.add(tag);
+  chip.classList.toggle("active", state.tags.has(tag));
+  if(state.tags.size===0) document.querySelector('.chip[data-tag="全部"]').classList.add("active");
+  render();
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  state.q=""; state.tags.clear();
+  document.getElementById("search").value="";
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active",c.dataset.tag==="全部"));
+  render();
+});
+
+// drawer (mobile)
+const sidebar=document.getElementById("sidebar"), backdrop=document.getElementById("backdrop");
+function closeDrawer(){sidebar.classList.remove("open"); backdrop.classList.remove("show");}
+document.getElementById("menuBtn").addEventListener("click",()=>{
+  sidebar.classList.add("open"); backdrop.classList.add("show");
+});
+backdrop.addEventListener("click",closeDrawer);
+
+// brand -> hub
+document.getElementById("brandLink").addEventListener("click",e=>{
+  if(HUB){ e.preventDefault(); window.location.href = HUB; }
+});
+
+// totop
+const totop=document.getElementById("totop");
+window.addEventListener("scroll",()=>{ totop.classList.toggle("show", window.scrollY>500); });
+totop.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+
+document.getElementById("genDate").textContent = "生成于 " + new Date().toLocaleDateString("zh-CN");
+
+// lightbox
+const lightbox = document.getElementById("lightbox");
+const lbImg = document.getElementById("lbImg");
+function openLightbox(src){ lbImg.src = src; lightbox.classList.add("open"); lightbox.setAttribute("aria-hidden","false"); }
+function closeLightbox(){ lightbox.classList.remove("open"); lbImg.src=""; lightbox.setAttribute("aria-hidden","true"); }
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-full]");
+  if(t){ openLightbox(t.getAttribute("data-full")); return; }
+  if(e.target === lightbox || e.target.id === "lbClose") closeLightbox();
+});
+document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeLightbox(); });
+
+// 让侧栏 sticky 顶端精确对齐 appbar 底部，滚动时绝对不动
+function syncAppbarH(){
+  const bar = document.querySelector(".appbar");
+  if(bar) document.documentElement.style.setProperty("--appbar-h", bar.getBoundingClientRect().height + "px");
+}
+
+// init
+buildStats();
+buildSidebar();
+render();
+syncAppbarH();                       // render 可能切换 filters 显隐，改变 appbar 高度，需在之后测
+window.addEventListener("load", syncAppbarH);
+window.addEventListener("resize", syncAppbarH);
+</script>
+</body>
+</html>

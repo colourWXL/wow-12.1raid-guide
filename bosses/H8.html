@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>圣糖刺客 12.1 团本攻略</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e13; --bg-2:#0e1219; --surface:#151b25; --surface-2:#1b2330;
+  --surface-3:#232d3b; --border:#2a3543; --border-soft:#1f2832;
+  --text:#e9eef5; --text-muted:#94a4b6; --text-dim:#66758a;
+  --toxic:#4fd99a; --toxic-soft:rgba(79,217,154,.12); --toxic-line:rgba(79,217,154,.35);
+  --arcane:#4cc4ff; --gold:#e9c46a; --danger:#ff5d6c;
+  --amber:#f4a261; --purple:#b18cff; --orange:#ff8a4c; --pink:#ff6fae;
+  --radius:14px; --radius-sm:9px;
+  --shadow:0 10px 30px -12px rgba(0,0,0,.6);
+  --maxw:1280px;
+  --appbar-h:120px; /* 由 JS 实测 .appbar 高度写入，保证侧栏紧贴其下方 */
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:"Oswald","Noto Sans SC",sans-serif; font-weight:600; letter-spacing:.02em; margin:0}
+a{color:inherit; text-decoration:none}
+button{font-family:inherit; cursor:pointer}
+
+/* ---------- App bar ---------- */
+.appbar{
+  position:sticky; top:0; z-index:40;
+  background:rgba(11,14,19,.82); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border-soft);
+}
+.appbar-inner{max-width:var(--maxw); margin:0 auto; padding:12px 20px;
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:12px; min-width:0}
+.brand .crest{
+  width:38px; height:38px; flex:0 0 auto; border-radius:10px;
+  background:linear-gradient(135deg,var(--toxic),#2a8f63);
+  display:grid; place-items:center; color:#06140d; font-weight:700; font-family:Oswald;
+  box-shadow:0 0 18px -4px var(--toxic-line)}
+.brand .t1{font-size:1.05rem; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.brand .t2{font-size:.72rem; color:var(--text-dim); letter-spacing:.18em; text-transform:uppercase}
+.search{flex:1 1 280px; min-width:200px; position:relative; max-width:560px}
+.search input{
+  width:100%; padding:11px 14px 11px 40px; border-radius:11px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text); font-size:.95rem; outline:none; transition:.15s}
+.search input:focus{border-color:var(--toxic-line); box-shadow:0 0 0 3px var(--toxic-soft)}
+.search svg{position:absolute; left:13px; top:50%; transform:translateY(-50%); opacity:.5}
+.menu-btn{display:none; background:var(--surface); border:1px solid var(--border); color:var(--text);
+  border-radius:10px; padding:9px 12px; font-size:.9rem}
+
+/* ---------- Filter row ---------- */
+.filters{max-width:var(--maxw); margin:0 auto; padding:12px 20px 14px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.filters .lbl{font-size:.8rem; color:var(--text-dim); letter-spacing:.1em; text-transform:uppercase}
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{
+  border:1px solid var(--border); background:var(--surface); color:var(--text-muted);
+  padding:6px 13px; border-radius:999px; font-size:.82rem; display:inline-flex; align-items:center; gap:7px;
+  transition:.15s; user-select:none}
+.chip:hover{border-color:var(--text-dim); color:var(--text)}
+.chip .dot{width:9px; height:9px; border-radius:50%; background:var(--text-dim)}
+.chip.active{color:#06140d; font-weight:600; border-color:transparent}
+.chip.active[data-tag="英雄专属"]{background:var(--arcane)} .chip.active[data-tag="英雄专属"] .dot{background:#063}
+.chip.active[data-tag="史诗专属"]{background:var(--danger); color:#fff} .chip.active[data-tag="史诗专属"] .dot{background:#fff}
+.chip.active[data-tag="可打断"]{background:var(--amber)} .chip.active[data-tag="可打断"] .dot{background:#5a3a00}
+.chip.active[data-tag="可驱散"]{background:var(--purple)} .chip.active[data-tag="可驱散"] .dot{background:#2a1450}
+.chip.active[data-tag="打坦"]{background:var(--orange)} .chip.active[data-tag="打坦"] .dot{background:#5a2a00}
+.chip.active[data-tag="特殊"]{background:var(--pink)} .chip.active[data-tag="特殊"] .dot{background:#5a0030}
+.chip.active[data-tag="全部"]{background:var(--toxic); color:#06140d}
+.reset{margin-left:auto; background:none; border:1px solid var(--border); color:var(--text-muted);
+  border-radius:8px; padding:6px 12px; font-size:.8rem}
+.reset:hover{color:var(--text); border-color:var(--text-dim)}
+
+/* ---------- Layout ---------- */
+/* 去掉 layout 的 padding-top：让 sidebar 顶端紧贴 .appbar 底部，
+   初始位置即等于它的 sticky top，从而滚动时完全不动。 */
+.layout{max-width:var(--maxw); margin:0 auto; padding:0 20px 80px;
+  display:grid; grid-template-columns:260px 1fr; gap:28px; align-items:start}
+.layout > main{padding-top:24px}
+
+/* sidebar：sticky top 对齐 appbar 实际高度，顶端固定不随右侧滚动而移动。
+   padding-top 把 Boss 列表与 appbar 底边框拉开间距（padding 不影响 sticky 位置）。 */
+.sidebar{position:sticky; top:var(--appbar-h); align-self:start;
+  max-height:calc(100vh - var(--appbar-h) - 16px); overflow:auto;
+  padding:14px 6px 0; scrollbar-width:thin}
+.side-group{margin-bottom:22px}
+.side-group h4{font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; color:var(--text-dim);
+  padding:0 10px 8px; display:flex; align-items:center; gap:8px}
+.side-group h4 .wing-dot{width:10px;height:10px;border-radius:3px}
+.navlink{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:9px;
+  color:var(--text-muted); font-size:.9rem; transition:.13s; border:1px solid transparent}
+.navlink:hover{background:var(--surface); color:var(--text)}
+.navlink.active{background:var(--surface-2); color:var(--text); border-color:var(--border)}
+.navlink .code{font-family:Oswald; font-weight:600; font-size:.78rem; padding:2px 7px; border-radius:6px;
+  background:var(--surface-3); color:var(--text); flex:0 0 auto}
+.navlink .nm{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.navlink .cnt{margin-left:auto; font-size:.72rem; color:var(--text-dim)}
+
+/* hero */
+.hero{position:relative; border-radius:var(--radius); overflow:hidden; padding:42px 38px; margin-bottom:34px;
+  background:
+    radial-gradient(900px 380px at 12% -20%, rgba(79,217,154,.18), transparent 60%),
+    radial-gradient(700px 360px at 95% 120%, rgba(76,196,255,.12), transparent 60%),
+    linear-gradient(180deg,var(--surface),var(--bg-2));
+  border:1px solid var(--border)}
+.hero::after{content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.25))}
+.hero h1{font-size:clamp(2rem,1.3rem+3vw,3.3rem); line-height:1.05; letter-spacing:.01em}
+.hero .sub{color:var(--text-muted); margin-top:10px; max-width:64ch}
+.hero .stats{display:flex; gap:14px; flex-wrap:wrap; margin-top:24px; position:relative}
+.stat{background:rgba(0,0,0,.28); border:1px solid var(--border); border-radius:12px; padding:12px 18px; min-width:96px}
+.stat b{display:block; font-family:Oswald; font-size:1.7rem; color:var(--toxic); line-height:1}
+.stat span{font-size:.78rem; color:var(--text-dim); letter-spacing:.08em}
+.legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:22px; position:relative}
+.legend .li{display:flex; align-items:center; gap:7px; font-size:.8rem; color:var(--text-muted)}
+.legend .li .dot{width:11px;height:11px;border-radius:50%}
+
+/* hub boss grid */
+.bossgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; margin-top:6px}
+.bosscard{display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; overflow:hidden;
+  background:linear-gradient(180deg,var(--surface),var(--bg-2)); transition:.18s}
+.bosscard:hover{transform:translateY(-3px); border-color:var(--toxic-line); box-shadow:var(--shadow)}
+.bc-cover{position:relative; aspect-ratio:16/9; background:var(--surface-2); overflow:hidden}
+.bc-cover img{width:100%; height:100%; object-fit:cover; display:block}
+.bc-cover .gridph-empty{width:100%; height:100%; display:grid; place-items:center; font-size:1.8rem; opacity:.35}
+.bc-img{position:absolute; right:10px; bottom:10px; background:rgba(0,0,0,.6); color:#dff; font-size:.72rem;
+  padding:3px 9px; border-radius:999px}
+.bc-body{padding:14px 16px; display:flex; flex-direction:column; gap:6px}
+.bc-top{display:flex; align-items:center; gap:8px}
+.bc-no{font-family:Oswald; font-weight:700; font-size:1.3rem; color:var(--toxic)}
+.bc-mythic{margin-left:auto; color:var(--danger); font-size:.95rem}
+.bc-name{font-size:1.08rem; font-weight:600}
+.bc-count{font-size:.78rem; color:var(--text-dim)}
+
+/* boss detail */
+.back{display:inline-flex; align-items:center; gap:6px; color:var(--text-muted); font-size:.85rem;
+  margin-bottom:16px; transition:.15s}
+.back:hover{color:var(--toxic)}
+.boss{scroll-margin-top:86px; margin-bottom:10px}
+.boss-head{display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:16px 18px; border-radius:var(--radius); border:1px solid var(--border);
+  background:linear-gradient(180deg,var(--surface-2),var(--surface)); position:relative; overflow:hidden}
+.boss-head::before{content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--toxic)}
+.boss-head .bcode{font-family:Oswald; font-weight:700; font-size:1.5rem; padding:6px 14px; border-radius:10px;
+  background:var(--surface-3); color:var(--toxic); flex:0 0 auto}
+.boss-head .bname{font-size:1.25rem}
+.boss-head .bcnt{margin-left:auto; font-size:.82rem; color:var(--text-muted)}
+.boss-head .bcnt b{color:var(--text); font-family:Oswald}
+.boss-head .bmythic{font-size:.74rem; letter-spacing:.05em; color:#fff;
+  background:var(--danger); padding:4px 11px; border-radius:999px; font-weight:600;
+  display:inline-flex; align-items:center; gap:5px}
+
+/* pager (prev/next boss) */
+.pager-row{display:flex; justify-content:space-between; gap:16px; margin-top:34px; flex-wrap:wrap}
+.pager{flex:1 1 0; min-width:200px; border:1px solid var(--border); border-radius:12px; padding:14px 18px;
+  background:var(--surface); display:flex; flex-direction:column; gap:3px; transition:.15s}
+.pager:hover{border-color:var(--toxic-line); background:var(--surface-2)}
+.pager.next{text-align:right; align-items:flex-end}
+.pager .pl{font-size:.74rem; color:var(--text-dim); letter-spacing:.1em; text-transform:uppercase}
+.pager .pn{font-size:1.02rem; font-weight:600; color:var(--text)}
+
+/* group */
+.group{margin-top:20px}
+.group-head{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  background:var(--surface); border:1px solid var(--border); border-radius:11px;
+  padding:11px 14px; color:var(--text); transition:.13s}
+.group-head:hover{background:var(--surface-2)}
+.group-head .gt{font-size:1rem; font-weight:600}
+.group-head .gcnt{font-size:.76rem; color:var(--text-dim); margin-left:auto}
+.group-head .chev{transition:transform .2s; color:var(--text-dim)}
+.group.collapsed .chev{transform:rotate(-90deg)}
+.group.collapsed .gbody{display:none}
+.gbody{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; margin-top:14px}
+
+/* ability card */
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:15px 16px; display:flex; flex-direction:column; gap:10px; position:relative; transition:.15s}
+.card:hover{border-color:var(--toxic-line); transform:translateY(-2px); box-shadow:var(--shadow)}
+.card .top{display:flex; align-items:flex-start; gap:10px}
+.card .num{flex:0 0 auto; width:30px; height:30px; border-radius:8px; display:grid; place-items:center;
+  font-family:Oswald; font-weight:700; font-size:.95rem; background:var(--surface-3); color:var(--gold)}
+.card .name{flex:1; font-weight:600; font-size:1.02rem; line-height:1.35; min-width:0}
+.card .tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:2px}
+.tag{font-size:.7rem; padding:2px 9px; border-radius:999px; font-weight:600; letter-spacing:.02em;
+  border:1px solid transparent}
+.tag.英雄专属{background:rgba(76,196,255,.16); color:var(--arcane); border-color:rgba(76,196,255,.4)}
+.tag.史诗专属{background:rgba(255,93,108,.16); color:var(--danger); border-color:rgba(255,93,108,.4)}
+.tag.可打断{background:rgba(244,162,97,.16); color:var(--amber); border-color:rgba(244,162,97,.4)}
+.tag.可驱散{background:rgba(177,140,255,.16); color:var(--purple); border-color:rgba(177,140,255,.4)}
+.tag.打坦{background:rgba(255,138,76,.16); color:var(--orange); border-color:rgba(255,138,76,.4)}
+.tag.特殊{background:rgba(255,111,174,.16); color:var(--pink); border-color:rgba(255,111,174,.4)}
+/* 小怪分组大卡片：占满整行，施放者作为标题，本体技能作为子卡嵌在里面 */
+.mob-card{
+  grid-column:1 / -1;
+  background:var(--surface); border:1px solid var(--border);
+  border-left:4px solid var(--amber);
+  border-radius:var(--radius); padding:14px 16px 16px;
+  display:flex; flex-direction:column; gap:12px}
+.mob-card .mob-head{display:flex; align-items:center; gap:9px; align-self:flex-start;
+  margin:0; padding:7px 14px; border-radius:9px;
+  background:linear-gradient(180deg,rgba(244,162,97,.2),rgba(244,162,97,.07));
+  border:1px solid rgba(244,162,97,.45); color:var(--amber);
+  font-weight:700; font-size:1.05rem; letter-spacing:.02em}
+.mob-card .mob-head .mob-ico{font-size:1.2rem; line-height:1}
+.mob-card .mob-head .mob-cap{font-size:.74rem; font-weight:400; color:var(--text-muted); margin-left:4px}
+.mob-card .mob-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px}
+.card .desc{font-size:.9rem; color:var(--text-muted); white-space:pre-wrap; line-height:1.62}
+.card .counter{background:var(--toxic-soft); border-left:3px solid var(--toxic);
+  border-radius:0 8px 8px 0; padding:10px 12px; font-size:.9rem; color:var(--text)}
+.card .counter .clabel{display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--toxic);
+  font-size:.78rem; letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px}
+.card .counter.empty{background:var(--surface-2); border-left-color:var(--border); color:var(--text-dim)}
+
+/* timeline (phase duration groups) */
+.gbody.tl{display:block; margin-top:12px}
+.timeline{position:relative}
+.tl-phase{margin:18px 0 6px; padding:3px 0 3px 12px; font-family:Oswald; font-weight:600;
+  font-size:.98rem; letter-spacing:.04em; color:var(--toxic);
+  border-left:3px solid var(--toxic)}
+.tl-phase:first-child{margin-top:4px}
+.tl-item{display:grid; grid-template-columns:62px 26px 1fr; align-items:stretch}
+.tl-time{font-family:Oswald; font-weight:600; font-size:.95rem; color:var(--toxic);
+  text-align:right; padding:13px 12px 13px 0; white-space:nowrap}
+.tl-axis{position:relative; display:flex; justify-content:center}
+.tl-axis::before{content:""; position:absolute; top:0; bottom:0; left:50%;
+  width:2px; transform:translateX(-50%); background:var(--border)}
+.tl-dot{position:relative; z-index:1; width:12px; height:12px; border-radius:50%;
+  background:var(--toxic); margin-top:18px; flex:0 0 auto; box-shadow:0 0 0 4px var(--bg)}
+.tl-item:first-child .tl-axis::before{top:20px}
+.tl-item:last-child .tl-axis::before{bottom:calc(100% - 20px)}
+.tl-body{background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:11px 14px; margin:6px 0; display:flex; flex-direction:column; gap:4px; transition:.15s}
+.tl-skill{font-weight:600; font-size:1rem; line-height:1.35; display:flex;
+  align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.tl-skill .tl-skill-name{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.tl-note{font-size:.84rem; color:var(--text-muted); line-height:1.5}
+/* 「其他」列内容：与技能名同一行、靠右对齐，不另起行、不显示「其他」标签 */
+.tl-other{text-align:right; font-size:.82rem; color:var(--text-muted); line-height:1.5;
+  margin-left:auto; flex:0 1 auto; min-width:0}
+.tl-item:hover .tl-body{border-color:var(--toxic-line); background:var(--surface-2)}
+
+/* mythic-exclusive group accent */
+.group.mythic .group-head{border-color:rgba(255,93,108,.5);
+  background:linear-gradient(180deg,rgba(255,93,108,.12),var(--surface))}
+.group.mythic .gt{color:var(--danger)}
+.group.mythic .gcnt{color:var(--danger)}
+
+.empty-state{text-align:center; padding:60px 20px; color:var(--text-dim)}
+.empty-state b{color:var(--text-muted)}
+
+footer{max-width:var(--maxw); margin:0 auto; padding:24px 20px 50px; color:var(--text-dim); font-size:.8rem;
+  border-top:1px solid var(--border-soft); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+.totop{position:fixed; right:22px; bottom:22px; z-index:30; width:46px; height:46px; border-radius:50%;
+  background:var(--surface-2); border:1px solid var(--border); color:var(--text); display:grid; place-items:center;
+  opacity:0; pointer-events:none; transition:.2s; box-shadow:var(--shadow)}
+.totop.show{opacity:1; pointer-events:auto}
+.totop:hover{border-color:var(--toxic-line); color:var(--toxic)}
+
+/* images: gallery + lightbox */
+.gallery{display:flex; gap:11px; flex-wrap:wrap; margin-top:16px}
+.gallery .ph{position:relative; width:168px; height:104px; border:1px solid var(--border);
+  border-radius:11px; overflow:hidden; cursor:zoom-in; background:var(--surface-2); flex:0 0 auto}
+.gallery .ph img{width:100%; height:100%; object-fit:cover; display:block; transition:.25s}
+.gallery .ph:hover img{transform:scale(1.07)}
+.gallery .ph .cap{position:absolute; left:0; right:0; bottom:0; font-size:.7rem; padding:4px 8px;
+  background:linear-gradient(transparent,rgba(0,0,0,.78)); color:#dff; letter-spacing:.04em}
+.lightbox{position:fixed; inset:0; z-index:90; background:rgba(4,6,10,.93); display:none;
+  align-items:center; justify-content:center; padding:28px; cursor:zoom-out}
+.lightbox.open{display:flex}
+.lightbox img{max-width:96%; max-height:94%; border-radius:10px; box-shadow:0 24px 70px rgba(0,0,0,.7)}
+.lightbox .lb-close{position:absolute; top:16px; right:22px; color:#fff; font-size:1.7rem;
+  background:none; border:none; cursor:pointer; line-height:1}
+
+.drawer-backdrop{display:none}
+@media (max-width:920px){
+  .layout{grid-template-columns:1fr}
+  .menu-btn{display:inline-flex}
+  .sidebar{position:fixed; top:0; left:0; bottom:0; width:280px; max-height:none; z-index:60;
+    background:var(--bg-2); border-right:1px solid var(--border); padding:18px 14px; transform:translateX(-105%);
+    transition:transform .25s ease; box-shadow:var(--shadow)}
+  .sidebar.open{transform:none}
+  .drawer-backdrop.show{display:block; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:55}
+  .gbody{grid-template-columns:1fr}
+  .appbar-inner{padding:10px 14px}
+  .search{order:3; flex-basis:100%; max-width:none}
+}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <button class="menu-btn" id="menuBtn" aria-label="打开 Boss 列表">☰ 列表</button>
+    <a class="brand" id="brandLink" href="#">
+      <div class="crest">圣</div>
+      <div>
+        <div class="t1">圣糖刺客 · 12.1 团本攻略</div>
+        <div class="t2">Raid Strategy Compendium</div>
+      </div>
+    </a>
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a4b6" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="search" type="search" placeholder="搜索技能 / 机制 / 应对…" autocomplete="off">
+    </div>
+  </div>
+  <div class="filters">
+    <span class="lbl">标签筛选</span>
+    <div class="chips" id="chips">
+      <button class="chip active" data-tag="全部"><span class="dot" style="background:var(--toxic)"></span>全部</button>
+      <button class="chip" data-tag="英雄专属"><span class="dot" style="background:var(--arcane)"></span>英雄专属</button>
+      <button class="chip" data-tag="史诗专属"><span class="dot" style="background:var(--danger)"></span>史诗专属</button>
+      <button class="chip" data-tag="可打断"><span class="dot" style="background:var(--amber)"></span>可打断</button>
+      <button class="chip" data-tag="可驱散"><span class="dot" style="background:var(--purple)"></span>可驱散</button>
+      <button class="chip" data-tag="打坦"><span class="dot" style="background:var(--orange)"></span>打坦</button>
+      <button class="chip" data-tag="特殊"><span class="dot" style="background:var(--pink)"></span>特殊</button>
+    </div>
+    <button class="reset" id="resetBtn">重置</button>
+  </div>
+</header>
+
+<div class="drawer-backdrop" id="backdrop"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Boss 导航"></nav>
+  <main>
+    <section class="hero">
+      <h1>圣糖刺客 12.1 团本全攻略</h1>
+      <p class="sub">把密密麻麻的表格变成一眼就能读懂的实战手册。点进任意 Boss 看它的全部技能、时间轴与战术截图；M 难度的史诗专属机制已附在各 Boss 末尾。</p>
+      <div class="stats" id="heroStats"></div>
+      <div class="legend">
+        <div class="li"><span class="dot" style="background:var(--toxic)"></span>时间轴＝持续分组的整场时间线</div>
+        <div class="li"><span class="dot" style="background:var(--arcane)"></span>蓝色＝普通难度没有的技能（英雄专属）</div>
+        <div class="li"><span class="dot" style="background:var(--danger)"></span>红色＝史诗难度专属（M 追加）</div>
+        <div class="li"><span class="dot" style="background:var(--amber)"></span>可打断 / <span class="dot" style="background:var(--purple)"></span>可驱散 / <span class="dot" style="background:var(--orange)"></span>打坦</div>
+      </div>
+    </section>
+    <div id="content"></div>
+  </main>
+</div>
+
+<button class="totop" id="totop" aria-label="回到顶部">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="lb-close" id="lbClose" aria-label="关闭">✕</button>
+  <img id="lbImg" src="" alt="放大查看">
+</div>
+
+<footer>
+  <span>数据来源：圣糖刺客12.1团本攻略.xlsx（已合并 H/M 难度，M 史诗专属技能附于各 Boss 末尾）</span>
+  <span id="genDate"></span>
+</footer>
+
+<script>
+const ASSET = "../";
+const NAV = "";
+const HUB = "../index.html";
+const SIDEBAR = [{"code": "H1", "no": 1, "name": "内克扎莉", "count": 51, "mythic": true, "mythicN": 1, "imgCount": 2, "cover": "image2.png"}, {"code": "H2", "no": 2, "name": "乌拉特克之息", "count": 68, "mythic": true, "mythicN": 1, "imgCount": 4, "cover": "image7.png"}, {"code": "H3议会", "no": 3, "name": "三贤者议会", "count": 157, "mythic": false, "mythicN": 0, "imgCount": 4, "cover": "image8.png"}, {"code": "H4", "no": 4, "name": "瓦什尼克", "count": 84, "mythic": true, "mythicN": 1, "imgCount": 1, "cover": "image12.png"}, {"code": "H5", "no": 5, "name": "斯索拉克", "count": 51, "mythic": true, "mythicN": 1, "imgCount": 2, "cover": "image13.png"}, {"code": "H6", "no": 6, "name": "维克苏尔", "count": 109, "mythic": true, "mythicN": 2, "imgCount": 1, "cover": "image15.png"}, {"code": "H7", "no": 7, "name": "祖尔加", "count": 116, "mythic": false, "mythicN": 0, "imgCount": 4, "cover": "image16.png"}, {"code": "H8", "no": 8, "name": "乌拉特克（蛇母）", "count": 37, "mythic": false, "mythicN": 0, "imgCount": 0, "cover": null}, {"code": "M潮缚", "no": 9, "name": "尼姆瑞莎·潮缚", "count": 6, "mythic": false, "mythicN": 0, "imgCount": 1, "cover": "image1.png"}];
+const BOSS = {"code": "H8", "groups": [{"name": "P1", "abilities": [{"num": "1", "mob": "", "skill": "腐蚀浪潮", "raw": "腐蚀浪潮", "desc": "乌拉特克向平台释放毒液浪潮，命中时对路径上的玩家造成556,471点自然伤害，并每1秒额外造成116,285点自然伤害，持续10秒。该效果可叠加\n浪潮接触乌拉特克的卵时，会使其立即孵化。", "counter": "", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "毒蛇呼唤", "raw": "毒蛇呼唤", "desc": "乌拉特克发出咆哮，令其子嗣从天花板坠落，对冲击点4码范围内的玩家造成463,414点自然伤害。", "counter": "", "tags": [], "time": ""}, {"num": "3", "mob": "", "skill": "蛇母之怒", "raw": "蛇母之怒（打坦）", "desc": "乌拉特克击退当前目标并标记其为愤怒对象，在其攻击范围内每0.4秒造成58w自然伤害，持续3秒。每次撕咬都会向目标注入岩石剧毒并留下步履维艰。\n若当前目标超出其攻击范围，乌拉特克将对所有玩家施加这些效果。\n岩石剧毒\n乌拉特克的毒液每1秒造成3w点自然伤害，持续1.7分钟。此效果可叠加。\n步履维艰\n乌拉特克使当前目标踱行，使其移动速度降低45%，持续1分钟。", "counter": "", "tags": ["打坦"], "time": ""}, {"num": "4", "mob": "", "skill": "死疽蒸汽", "raw": "死疽蒸汽", "desc": "随着乌拉特克搅动水池，死痘蒸汽充满整个房问，每1秒对所有玩家造成21,628点自然伤害。此效果可叠加。", "counter": "", "tags": [], "time": ""}, {"num": "5", "mob": "", "skill": "乌拉特克之羁绊", "raw": "乌拉特克之羁绊", "desc": "乌拉特克的全部形态均共享受到的伤害。", "counter": "", "tags": [], "time": ""}, {"num": "6", "mob": "", "skill": "被缚之怒", "raw": "被缚之怒", "desc": "乌拉特克陷入狂暴，每4秒对所有玩家造成30w点自然伤害，持续20秒，并导致落石砸向几个随机的目标点。\n陷入这种狂暴状杰会暴露出乌拉特克的烈毒之心。\n落石\n掉落的碎片砸向几个随机的目标点，对落点7码范围内的玩家造成557,436点自然伤害\n烈毒之心\n乌拉特克跳动的核心。烈毒之心受到的所有伤害提高100%，持续20秒", "counter": "", "tags": [], "time": ""}, {"num": "7", "mob": "", "skill": "无羁之怒", "raw": "无羁之怒", "desc": "如果乌拉特克在未施法或引导时无法对附近的玩家进行近战攻击，她将对所有玩家造成物理伤害。", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "血腥响尾", "skill": "响尾猛击", "raw": "响尾猛击", "desc": "在近战范围内没有敌人时，乌拉特克之尾会猛击平台，对所有玩家造成68w点自然伤害", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "血腥响尾", "skill": "恶臭痛击", "raw": "恶臭痛击", "desc": "乌拉特克的尾巴横扫地面，对35码内的玩家造成55w点自然伤害并将其击退。此外35码外的玩家会受到40w点自然伤害，并在10秒内每2秒额外受到8w点自然伤害", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "血腥响尾", "skill": "幽魂盘卷", "raw": "幽魂盘卷", "desc": "乌拉特克的幽魂盘卷高高举起并猛击平台，粉碎下方的一切，对所有玩家造成50w自然伤害，该伤害会根据冲击点10码范围内的玩家数量而逐渐降低。\n在英雄难度下，乌拉特克会对减免了幽魂盘卷伤害的玩家施放[灵魂纹杀者]。\n灵魂绞杀者\n乌拉特克绞杀你的灵魂，使你无法减免幽魂盘卷的伤害，持续6秒", "counter": "", "tags": [], "time": ""}], "timeline": false}, {"name": "P2", "abilities": [{"num": "", "mob": "厄鳞之卵", "skill": "群体孕育", "raw": "群体孕育", "desc": "惊动一枚厄鳞之卵会促使同侧剩余的所有疫鳞之嗣开始蠕动孕育。", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "厄鳞之卵", "skill": "孵化厄运", "raw": "孵化厄运", "desc": "贪婪的厄鳞闻到了猎物的气味，它正在抓挠蛇卵，以便破壳而出饱餐一顿。", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "厄鳞之卵", "skill": "厄鳞外壳", "raw": "厄鳞外壳", "desc": "乌拉特克的厄鳞之卵覆盖着一层黏稠的外壳，会黏附在触碰它们的玩家身上，附着期问每2秒造成6w点自然伤害。\n被拾取后，里面的野兽会在20秒后孵化。", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "厄鳞之卵", "skill": "贪婪的厄鳞", "raw": "贪婪的厄鳞", "desc": "恐怖咆哮\n贪婪的厄鳞发出咆哮，每秒造成58w自然伤害，并使所有玩家昏迷，持续20秒。\n缺陷:虚弱\n干扰贪婪的厄鳞的孕育会削弱它，使其受到的所有伤害提高100%。在这种虚弱状态下，该野兽也无法使用恐怖咆哮。\n痛苦哀嚎\n厄鳞对60码范围内的玩家造成40w自然伤害并使其昏迷，持续6秒。\n绝望鞭笞（打坦）\n对锥形范围内的玩家造成40w自然伤害，并每秒造成4w自然伤害持续6秒。", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "厄鳞守卫", "skill": "攫取毒牙", "raw": "攫取毒牙", "desc": "在英雄难度下，厄鳞守卫会向玩家施放[攫取毒牙]。\n厄鳞守卫将毒牙刺入随机玩家体内，每2秒造成21w点自然伤害，并在攫取毒牙未被打破时使其移动速度降低45%。打断毒牙会造成凋萎静脉。\n在英雄难度下，凋姜静脉对所有玩家生效。\n凋姜静脉\n在移除攫取毒牙时，凋萎静脉会被注入玩家体内，每2秒造成14w点自然伤害，持续8秒。", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "厄鳞守卫", "skill": "守卫的保护", "raw": "守卫的保护", "desc": "厄鳞守卫的生命之力盘绕在卵上，每1秒对7码内的玩家造成216,279点自然伤害，只要守卫仍存活，便禁止触碰这些卵。", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "厄鳞守卫", "skill": "恶意", "raw": "恶意（可打断）", "desc": "厄鳞守卫肆意倾泻着恶意，在6秒内每1秒对所有玩家造成587,238点自然伤害。", "counter": "", "tags": ["可打断"], "time": ""}, {"num": "", "mob": "厄鳞守卫", "skill": "暗影蜕皮", "raw": "暗影蜕皮", "desc": "厄鳞守卫脱落其暗影外皮，并滑行至新的位置。", "counter": "", "tags": [], "time": ""}, {"num": "", "mob": "厄鳞守卫", "skill": "蠕动孕育", "raw": "蠕动孕育", "desc": "厄鳞守卫将附近的疫鳞子嗣转化为疫鳞卵\n簇，并在20秒后孵化。", "counter": "", "tags": [], "time": ""}, {"num": "1", "mob": "", "skill": "厄鳞大锅", "raw": "厄鳞大锅", "desc": "一口嘶嘶作响的腐蚀毒液大锅，随时准备吞噬\n投入其中的祭品。", "counter": "", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "疫鳞卵簇", "raw": "疫鳞卵簇", "desc": "在蠕动孕育期间，只要其未被打破，窝内的乌拉特克之嗣就会不断积聚力量。\n疫鳞幼体\n过早破壳的疫鳞幼体正艰难求生。\n在英雄难度下，疫鳞幼体会向玩家施放[剧毒撕咬]。\n剧毒撕咬\n疫鳞幼体的撕咬在10秒内每1秒对当前目标造成18,538点自然伤害。此效果可叠加。\n疫鳞蜂蛇\n完全发育成熟的疫鳞蝰蛇是极其致命的掠食者\n在英雄难度下，疫鳞蝰蛇会向玩家施放[石化钉刺]。\n酸液爆发（可驱毒）\n这条毒蛇朝着一名随机玩家喷吐毒液，在命中时造成278.072点自然伤害，并在接下来的18秒内每1秒额外造成43,256点自然伤害。\n石化钉刺\n毒蛇向随机玩家俯冲，将该位置10码范围内的玩家石化，吸收接下来的185万点治疗量，并每2秒造成7w点自然伤害。", "counter": "", "tags": [], "time": ""}, {"num": "3", "mob": "", "skill": "剧毒喷吐", "raw": "剧毒喷吐", "desc": "乌拉特克向多个目标位置喷吐毒液，对落点4码范围内的玩家造成557.436点自然伤害。", "counter": "", "tags": [], "time": ""}, {"num": "4", "mob": "", "skill": "死疽蒸汽", "raw": "死疽蒸汽", "desc": "同P1", "counter": "", "tags": [], "time": ""}, {"num": "5", "mob": "", "skill": "乌拉特克之羁绊", "raw": "乌拉特克之羁绊", "desc": "同P1", "counter": "", "tags": [], "time": ""}, {"num": "6", "mob": "", "skill": "被缚之怒", "raw": "被缚之怒", "desc": "同P1", "counter": "", "tags": [], "time": ""}], "timeline": false}, {"name": "P2.5", "abilities": [{"num": "1", "mob": "", "skill": "幽魂盘卷", "raw": "幽魂盘卷", "desc": "同P1", "counter": "", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "死疽蒸汽", "raw": "死疽蒸汽", "desc": "同P1", "counter": "", "tags": [], "time": ""}], "timeline": false}, {"name": "P3", "abilities": [{"num": "1", "mob": "", "skill": "盘绕猎物", "raw": "盘绕猎物", "desc": "乌拉特克摧毁一部分平台，将她的猎物拉近，对13码内的玩家造成185万点自然伤害并将其击退。此外，13码外的玩家还会受到463,454点自然伤害。", "counter": "", "tags": [], "time": ""}, {"num": "2", "mob": "", "skill": "腐蚀浪潮", "raw": "腐蚀浪潮", "desc": "乌拉特克向平台释放毒液浪潮，命中时对路径上的玩家造成55w点自然伤害，并每1秒额外造成11w点自然伤害，持续10秒。该效果可叠加。浪潮接触乌拉特克的卵时，会使其立即孵化。", "counter": "", "tags": [], "time": ""}, {"num": "3", "mob": "", "skill": "毒蛇呼唤", "raw": "毒蛇呼唤", "desc": "乌拉特克发出咆哮，将她的子嗣从天花板上震落。\n疫鳞卵簇（同P2）\n疫鳞尖啸者\n当乌拉特克摧毁牢笼时，疫鳞尖啸者会从天花板的卵中挣脱而出，开始猎杀玩家。\n酸液喷发\n疫鳞喷出毒液，命中时造成11w点自然伤害，并额外对所有玩家造成3w点自然伤害，每1秒一次，持续35秒。\n险恶回音（可打断）\n疫鳞尖啸者发出尖啸，对玩家造成463,454点自然伤害，且每1秒额外造成9w点自然伤害，同时使其昏述，持续6秒", "counter": "", "tags": [], "time": ""}, {"num": "4", "mob": "", "skill": "毒蛇之咬", "raw": "毒蛇之咬", "desc": "乌拉特克向数名玩家射出毒牙，命中时造成31w点自然伤害，并在15秒内每1秒额外造成74,153点自然伤害。效果结束时，玩家会变成钙化尸骸。\n7码内的玩家可吸取毒液以移除该效果，但会感染易爆清除。\n钙化尸骸\n乌拉特克的毒液将玩家化为石像，使其昏述，并每1秒造成74w点自然伤害。此效果可穿透免疫。\n易爆清除\n吸取毒蛇之咬的玩家会在5秒后排出体内。效果结束时，毒液从受影响的玩家体内喷发，命中时造成46w自然伤害，并对排毒位置7码范围内的玩家每秒7w伤害，持续12秒，此效果可叠加。", "counter": "", "tags": [], "time": ""}, {"num": "5", "mob": "", "skill": "蛇母之怒", "raw": "蛇母之怒（打坦）", "desc": "同P1", "counter": "", "tags": ["打坦"], "time": ""}, {"num": "6", "mob": "", "skill": "死疽蒸汽", "raw": "死疽蒸汽", "desc": "同P1", "counter": "", "tags": [], "time": ""}, {"num": "7", "mob": "", "skill": "乌拉特克之羁绊", "raw": "乌拉特克之羁绊", "desc": "同P1", "counter": "", "tags": [], "time": ""}, {"num": "8", "mob": "", "skill": "被缚之怒", "raw": "被缚之怒", "desc": "同P1", "counter": "", "tags": [], "time": ""}, {"num": "9", "mob": "", "skill": "怒火释放", "raw": "怒火释放", "desc": "乌拉特克撕裂了她的囚笼，立即对所有玩家造成185万点自然伤害，随后每1秒额外造成68w点自然伤害。", "counter": "", "tags": [], "time": ""}, {"num": "10", "mob": "", "skill": "无羁之怒", "raw": "无羁之怒", "desc": "如果乌拉特克在未施法或引导时无法对附近的玩家进行近战攻击，她将对所有玩家造成物理伤害", "counter": "", "tags": [], "time": ""}], "timeline": false}], "images": [], "name": "乌拉特克（蛇母）", "no": 8};
+const STATS = {"bosses": 9, "total": 679, "mythic": 6};
+
+const state = { q:"", tags:new Set() };
+
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function tagBadges(tags){ return (tags||[]).map(t=>`<span class="tag ${t}">${t}</span>`).join(""); }
+function bossName(b){ return (b && b.name) ? b.name : (b && b.code) || ""; }
+
+function abilityCard(ab){
+  const hasCounter = ab.counter && ab.counter.trim() && ab.counter.trim()!=="None";
+  const counterHtml = hasCounter
+    ? `<div class="counter"><span class="clabel">⚔ 应对</span><div>${esc(ab.counter)}</div></div>`
+    : `<div class="counter empty"><span class="clabel">应对</span><div>暂无应对说明</div></div>`;
+  const num = ab.num && ab.num!=="None"
+    ? `<div class="num">${esc(ab.num)}</div>`
+    : `<div class="num" style="color:var(--text-dim)">·</div>`;
+  const txt = (ab.skill+' '+(ab.mob||'')+' '+ab.desc+' '+ab.counter+' '+(ab.tags||[]).join(' ')).toLowerCase();
+  return `<article class="card" data-text="${esc(txt)}">
+    <div class="top">${num}<div class="name">${esc(ab.skill)}<div class="tags">${tagBadges(ab.tags)}</div></div></div>
+    <div class="desc">${esc(ab.desc)}</div>
+    ${counterHtml}
+  </article>`;
+}
+
+// 普通分组：连续同「施放者(mob)」的技能聚成一个占满整行的大卡片，
+// 标题=施放者，技能作为子卡嵌在卡内；无 mob 的本体技能仍是普通卡。
+function groupBody(g, boss){
+  const abs = g.abilities.filter(passAbility);
+  let html = "";
+  let i = 0;
+  while(i < abs.length){
+    const ab = abs[i];
+    if(ab.mob && ab.mob.trim()){
+      const mobName = ab.mob.trim();
+      const members = [ab]; i++;
+      while(i < abs.length){
+        const nx = abs[i];
+        if((nx.mob||"").trim() !== mobName) break; // 回到本体技能或换了施放者，断开
+        members.push(nx); i++;
+      }
+      html += mobCard(mobName, members);
+    } else {
+      html += abilityCard(ab); i++; // 本体技能
+    }
+  }
+  return html;
+}
+
+function mobCard(mobName, members){
+  const inner = members.map(abilityCard).join("");
+  return `<div class="mob-card" data-text="${esc(mobName.toLowerCase())}">
+    <div class="mob-head"><span class="mob-ico">☣</span><span class="mob-name">${esc(mobName)}</span><span class="mob-cap">施放者 · ${members.length} 项</span></div>
+    <div class="mob-grid">${inner}</div>
+  </div>`;
+}
+
+// 时间轴：按阶段（phase）插入小标题
+function timelineBody(g){
+  let html=""; let curPhase=null;
+  for(const ab of g.abilities.filter(passAbility)){
+    if(ab.phase && ab.phase!==curPhase){
+      html += `<div class="tl-phase">${esc(ab.phase)}</div>`;
+      curPhase = ab.phase;
+    }
+    html += timelineItem(ab);
+  }
+  return html;
+}
+
+function timelineItem(ab){
+  const note = (ab.desc && ab.desc.trim() && ab.desc.trim()!=="None") ? ab.desc.trim() : "";
+  const other = (ab.counter && ab.counter.trim() && ab.counter.trim()!=="None") ? ab.counter.trim() : "";
+  const time = ab.time || "";
+  return `<div class="tl-item" data-text="${esc((ab.skill+' '+ab.desc+' '+(ab.counter||'')+' '+(ab.tags||[]).join(' ')).toLowerCase())}">
+    <div class="tl-time">${esc(time)}</div>
+    <div class="tl-axis"><span class="tl-dot"></span></div>
+    <div class="tl-body">
+      <div class="tl-skill">
+        <span class="tl-skill-name">${esc(ab.skill)}${tagBadges(ab.tags)}</span>
+        ${other?`<span class="tl-other">${esc(other)}</span>`:""}
+      </div>
+      ${note?`<div class="tl-note">${esc(note)}</div>`:""}
+    </div>
+  </div>`;
+}
+
+function passAbility(ab){
+  const q = state.q.trim().toLowerCase();
+  if(q){
+    const hay = (ab.skill+' '+ab.desc+' '+ab.counter+' '+(ab.tags||[]).join(' ')).toLowerCase();
+    if(!hay.includes(q)) return false;
+  }
+  if(state.tags.size){
+    const t = ab.tags||[];
+    let ok=false; for(const x of state.tags){ if(t.includes(x)){ok=true;break;} }
+    if(!ok) return false;
+  }
+  return true;
+}
+
+function groupHtml(g, boss){
+  const isTL = g.timeline;
+  const isMyth = g.isMythic;
+  const visible = g.abilities.filter(passAbility);
+  if(!visible.length) return "";
+  const body = isTL ? timelineBody(g) : groupBody(g, boss);
+  return `<section class="group ${isMyth?'mythic':''}" ${isTL?'id="timeline"':''} data-gname="${esc(g.name||'')}">
+    <button class="group-head" aria-expanded="true">
+      <span class="gt">${esc(g.name||'通用')}</span>
+      <span class="gcnt">${visible.length} 项</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="gbody ${isTL?'tl':''}">${body}</div>
+  </section>`;
+}
+
+function pagerHtml(boss){
+  const idx = SIDEBAR.findIndex(b=>b.code===boss.code);
+  if(idx<0) return "";
+  const prev = idx>0 ? SIDEBAR[idx-1] : null;
+  const next = idx<SIDEBAR.length-1 ? SIDEBAR[idx+1] : null;
+  const cell=(b,dir)=> b
+    ? `<a class="pager ${dir}" href="${NAV}${esc(b.code)}.html"><span class="pl">${dir==='prev'?'← 上一个':'下一个 →'}</span><span class="pn">${b.no}. ${esc(b.name)}</span></a>`
+    : `<span></span>`;
+  return `<div class="pager-row">${cell(prev,'prev')}${cell(next,'next')}</div>`;
+}
+
+function bossHtml(boss){
+  const total = boss.groups.reduce((s,g)=>s+g.abilities.length,0);
+  const mythic = boss.groups.find(g=>g.isMythic);
+  const mythicN = mythic ? mythic.abilities.length : 0;
+  const imgs = boss.images||[];
+  const gallery = imgs.length
+    ? `<div class="gallery">${imgs.map(f=>
+        `<div class="ph" data-full="${ASSET}assets/${esc(f)}"><img loading="lazy" src="${ASSET}assets/${esc(f)}" alt="战术截图"><span class="cap">战术截图</span></div>`
+      ).join("")}</div>`
+    : "";
+  return `<section class="boss">
+    <a class="back" href="${HUB}">← 返回总览</a>
+    <div class="boss-head">
+      <div class="bcode">${esc(boss.no)}</div>
+      <div class="bname">${esc(bossName(boss))}</div>
+      ${mythicN?`<span class="bmythic">⚑ 含史诗专属 ${mythicN}</span>`:""}
+      <span class="bcnt"><b>${total}</b> 项技能</span>
+      ${imgs.length?`<span class="boot-img">📷 <b>${imgs.length}</b> 图</span>`:""}
+    </div>
+    ${gallery}
+    ${boss.groups.map(g=>groupHtml(g, boss)).join("")}
+    ${pagerHtml(boss)}
+  </section>`;
+}
+
+function hubGrid(){
+  const cards = SIDEBAR.map(b=>{
+    const cover = b.cover
+      ? `<img src="${ASSET}assets/${esc(b.cover)}" alt="${esc(b.name)}">`
+      : `<div class="gridph-empty">📋</div>`;
+    return `<a class="bosscard" href="${NAV}${esc(b.code)}.html">
+      <div class="bc-cover">${cover}${b.imgCount?`<span class="bc-img">📷 ${b.imgCount}</span>`:""}</div>
+      <div class="bc-body">
+        <div class="bc-top"><span class="bc-no">${esc(b.no)}</span>${b.mythic?`<span class="bc-mythic">⚑</span>`:""}</div>
+        <div class="bc-name">${esc(b.name)}</div>
+        <div class="bc-count">${b.count} 项技能${b.mythicN?` · 史诗专属 ${b.mythicN}`:""} · ${b.imgCount} 图</div>
+      </div>
+    </a>`;
+  }).join("");
+  return `<div class="bossgrid">${cards}</div>`;
+}
+
+function buildSidebar(){
+  let h = `<div class="side-group"><h4><span class="wing-dot" style="background:var(--toxic)"></span>Boss 列表</h4>`;
+  for(const b of SIDEBAR){
+    const active = (BOSS && b.code===BOSS.code) ? " active" : "";
+    h += `<a class="navlink${active}" href="${NAV}${esc(b.code)}.html" data-code="${esc(b.code)}">
+      <span class="code">${esc(b.no)}</span>
+      <span class="nm">${esc(b.name)}</span>
+      ${b.mythic?`<span class="cnt" style="color:var(--danger)">⚑</span>`:""}
+      <span class="cnt">${b.count}</span></a>`;
+  }
+  h += `</div>`;
+  document.getElementById("sidebar").innerHTML = h;
+}
+
+function buildStats(){
+  const items = [
+    [STATS.bosses,"Boss 总数"],
+    [STATS.total,"技能条目"],
+    [STATS.mythic,"史诗专属 (M)"]
+  ];
+  document.getElementById("heroStats").innerHTML =
+    items.map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
+}
+
+function render(){
+  const content = document.getElementById("content");
+  const hero = document.querySelector(".hero");
+  const filters = document.querySelector(".filters");
+  if(BOSS){
+    hero.style.display = "none";
+    filters.style.display = "flex";
+    content.innerHTML = bossHtml(BOSS);
+  } else {
+    hero.style.display = "";
+    filters.style.display = "none";
+    content.innerHTML = hubGrid();
+  }
+  content.querySelectorAll(".group-head").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const grp = btn.closest(".group");
+      const collapsed = grp.classList.toggle("collapsed");
+      btn.setAttribute("aria-expanded", String(!collapsed));
+    });
+  });
+}
+
+// search + filters (apply to the current page's content)
+let deb;
+document.getElementById("search").addEventListener("input",e=>{
+  clearTimeout(deb);
+  deb=setTimeout(()=>{ state.q=e.target.value; render(); },120);
+});
+document.getElementById("chips").addEventListener("click",e=>{
+  const chip = e.target.closest(".chip"); if(!chip) return;
+  const tag = chip.dataset.tag;
+  if(tag==="全部"){
+    state.tags.clear();
+    document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active",c.dataset.tag==="全部"));
+    render(); return;
+  }
+  document.querySelector('.chip[data-tag="全部"]').classList.remove("active");
+  if(state.tags.has(tag)) state.tags.delete(tag); else state.tags.add(tag);
+  chip.classList.toggle("active", state.tags.has(tag));
+  if(state.tags.size===0) document.querySelector('.chip[data-tag="全部"]').classList.add("active");
+  render();
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  state.q=""; state.tags.clear();
+  document.getElementById("search").value="";
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active",c.dataset.tag==="全部"));
+  render();
+});
+
+// drawer (mobile)
+const sidebar=document.getElementById("sidebar"), backdrop=document.getElementById("backdrop");
+function closeDrawer(){sidebar.classList.remove("open"); backdrop.classList.remove("show");}
+document.getElementById("menuBtn").addEventListener("click",()=>{
+  sidebar.classList.add("open"); backdrop.classList.add("show");
+});
+backdrop.addEventListener("click",closeDrawer);
+
+// brand -> hub
+document.getElementById("brandLink").addEventListener("click",e=>{
+  if(HUB){ e.preventDefault(); window.location.href = HUB; }
+});
+
+// totop
+const totop=document.getElementById("totop");
+window.addEventListener("scroll",()=>{ totop.classList.toggle("show", window.scrollY>500); });
+totop.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+
+document.getElementById("genDate").textContent = "生成于 " + new Date().toLocaleDateString("zh-CN");
+
+// lightbox
+const lightbox = document.getElementById("lightbox");
+const lbImg = document.getElementById("lbImg");
+function openLightbox(src){ lbImg.src = src; lightbox.classList.add("open"); lightbox.setAttribute("aria-hidden","false"); }
+function closeLightbox(){ lightbox.classList.remove("open"); lbImg.src=""; lightbox.setAttribute("aria-hidden","true"); }
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-full]");
+  if(t){ openLightbox(t.getAttribute("data-full")); return; }
+  if(e.target === lightbox || e.target.id === "lbClose") closeLightbox();
+});
+document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeLightbox(); });
+
+// 让侧栏 sticky 顶端精确对齐 appbar 底部，滚动时绝对不动
+function syncAppbarH(){
+  const bar = document.querySelector(".appbar");
+  if(bar) document.documentElement.style.setProperty("--appbar-h", bar.getBoundingClientRect().height + "px");
+}
+
+// init
+buildStats();
+buildSidebar();
+render();
+syncAppbarH();                       // render 可能切换 filters 显隐，改变 appbar 高度，需在之后测
+window.addEventListener("load", syncAppbarH);
+window.addEventListener("resize", syncAppbarH);
+</script>
+</body>
+</html>

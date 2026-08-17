@@ -1,0 +1,8 @@
+# 仅保留可独立运行的静态站点文件；源码/中间产物/截图不上传
+*
+!.gitignore
+!index.html
+!bosses/
+!bosses/**
+!assets/
+!assets/**
