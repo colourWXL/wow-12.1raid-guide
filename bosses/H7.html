@@ -60,7 +60,8 @@ button{font-family:inherit; cursor:pointer}
 
 /* ---------- Filter row ---------- */
 .filters{max-width:var(--maxw); margin:0 auto; padding:12px 20px 14px;
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:rgba(11,14,19,.6); border-bottom:1px solid var(--border-soft)}
 .filters .lbl{font-size:.8rem; color:var(--text-dim); letter-spacing:.1em; text-transform:uppercase}
 .chips{display:flex; gap:8px; flex-wrap:wrap}
 .chip{
@@ -339,20 +340,21 @@ footer{max-width:var(--maxw); margin:0 auto; padding:24px 20px 50px; color:var(-
       <input id="search" type="search" placeholder="搜索技能 / 机制 / 应对…" autocomplete="off">
     </div>
   </div>
-  <div class="filters">
-    <span class="lbl">标签筛选</span>
-    <div class="chips" id="chips">
-      <button class="chip active" data-tag="全部"><span class="dot" style="background:var(--toxic)"></span>全部</button>
-      <button class="chip" data-tag="英雄专属"><span class="dot" style="background:var(--arcane)"></span>英雄专属</button>
-      <button class="chip" data-tag="史诗专属"><span class="dot" style="background:var(--danger)"></span>史诗专属</button>
-      <button class="chip" data-tag="可打断"><span class="dot" style="background:var(--amber)"></span>可打断</button>
-      <button class="chip" data-tag="可驱散"><span class="dot" style="background:var(--purple)"></span>可驱散</button>
-      <button class="chip" data-tag="打坦"><span class="dot" style="background:var(--orange)"></span>打坦</button>
-      <button class="chip" data-tag="特殊"><span class="dot" style="background:var(--pink)"></span>特殊</button>
-    </div>
-    <button class="reset" id="resetBtn">重置</button>
-  </div>
 </header>
+
+<div class="filters">
+  <span class="lbl">标签筛选</span>
+  <div class="chips" id="chips">
+    <button class="chip active" data-tag="全部"><span class="dot" style="background:var(--toxic)"></span>全部</button>
+    <button class="chip" data-tag="英雄专属"><span class="dot" style="background:var(--arcane)"></span>英雄专属</button>
+    <button class="chip" data-tag="史诗专属"><span class="dot" style="background:var(--danger)"></span>史诗专属</button>
+    <button class="chip" data-tag="可打断"><span class="dot" style="background:var(--amber)"></span>可打断</button>
+    <button class="chip" data-tag="可驱散"><span class="dot" style="background:var(--purple)"></span>可驱散</button>
+    <button class="chip" data-tag="打坦"><span class="dot" style="background:var(--orange)"></span>打坦</button>
+    <button class="chip" data-tag="特殊"><span class="dot" style="background:var(--pink)"></span>特殊</button>
+  </div>
+  <button class="reset" id="resetBtn">重置</button>
+</div>
 
 <div class="drawer-backdrop" id="backdrop"></div>
 
