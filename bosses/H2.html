@@ -55,6 +55,8 @@ button{font-family:inherit; cursor:pointer}
 .search svg{position:absolute; left:13px; top:50%; transform:translateY(-50%); opacity:.5}
 .menu-btn{display:none; background:var(--surface); border:1px solid var(--border); color:var(--text);
   border-radius:10px; padding:9px 12px; font-size:.9rem}
+.filter-btn{display:none; background:var(--surface); border:1px solid var(--border); color:var(--text);
+  border-radius:10px; padding:9px 12px; font-size:.9rem; margin-left:auto; white-space:nowrap}
 
 /* ---------- Filter row ---------- */
 .filters{max-width:var(--maxw); margin:0 auto; padding:12px 20px 14px;
@@ -300,15 +302,18 @@ footer{max-width:var(--maxw); margin:0 auto; padding:24px 20px 50px; color:var(-
   .search input{padding:9px 12px 9px 36px; border-radius:10px; font-size:.9rem}
   .search svg{left:11px; width:16px; height:16px}
 
-  /* —— 筛选条：单行横向滚动（不换行），隐藏“标签筛选”文字标，整体紧凑 —— */
-  .filters{flex-wrap:nowrap; overflow-x:auto; padding:6px 14px 8px; gap:7px;
-    scrollbar-width:none; -webkit-overflow-scrolling:touch}
-  .filters::-webkit-scrollbar{display:none}
-  .filters .lbl{display:none}
-  .chips{flex-wrap:nowrap; gap:6px}
-  .chip{flex:0 0 auto; padding:5px 11px; font-size:.78rem; border-radius:999px}
-  .chip .dot{width:8px; height:8px}
-  .reset{flex:0 0 auto; margin-left:6px; padding:5px 10px; font-size:.76rem}
+  /* —— 筛选改为右侧抽屉：顶部只留标题 + 搜索两行 —— */
+  .filter-btn{display:inline-flex}
+  .filters{position:fixed; top:0; right:0; bottom:0; width:300px; max-width:84vw; z-index:60;
+    background:var(--bg-2); border-left:1px solid var(--border); padding:20px 18px;
+    flex-direction:column; align-items:stretch; gap:14px;
+    transform:translateX(105%); transition:transform .25s ease; box-shadow:var(--shadow); overflow:auto}
+  .filters.open{transform:none}
+  .filters .lbl{display:block; font-size:.78rem; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim)}
+  .chips{display:flex; gap:8px; flex-wrap:wrap}
+  .chip{padding:7px 13px; font-size:.84rem; border-radius:999px}
+  .chip .dot{width:9px; height:9px}
+  .reset{margin-left:0; align-self:flex-start; padding:7px 13px; font-size:.8rem}
 }
 /* 极窄屏（小手机）进一步缩 brand 标题字号，避免溢出 */
 @media (max-width:380px){
@@ -328,6 +333,7 @@ footer{max-width:var(--maxw); margin:0 auto; padding:24px 20px 50px; color:var(-
         <div class="t2">Raid Strategy Compendium</div>
       </div>
     </a>
+    <button class="filter-btn" id="filterBtn" aria-label="打开标签筛选">☰ 筛选</button>
     <div class="search">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a4b6" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input id="search" type="search" placeholder="搜索技能 / 机制 / 应对…" autocomplete="off">
@@ -594,6 +600,7 @@ function render(){
     filters.style.display = "none";
     content.innerHTML = hubGrid();
   }
+  filterBtn.style.display = BOSS ? "" : "none";
   content.querySelectorAll(".group-head").forEach(btn=>{
     btn.addEventListener("click",()=>{
       const grp = btn.closest(".group");
@@ -632,11 +639,18 @@ document.getElementById("resetBtn").addEventListener("click",()=>{
 
 // drawer (mobile)
 const sidebar=document.getElementById("sidebar"), backdrop=document.getElementById("backdrop");
+const filterBtn=document.getElementById("filterBtn");
+const filterDrawer=document.querySelector(".filters");
 function closeDrawer(){sidebar.classList.remove("open"); backdrop.classList.remove("show");}
+function closeFilterDrawer(){filterDrawer.classList.remove("open"); backdrop.classList.remove("show");}
 document.getElementById("menuBtn").addEventListener("click",()=>{
   sidebar.classList.add("open"); backdrop.classList.add("show");
 });
-backdrop.addEventListener("click",closeDrawer);
+filterBtn.addEventListener("click",()=>{
+  const open = filterDrawer.classList.toggle("open");
+  backdrop.classList.toggle("show", open);
+});
+backdrop.addEventListener("click",()=>{ closeDrawer(); closeFilterDrawer(); });
 
 // brand -> hub
 document.getElementById("brandLink").addEventListener("click",e=>{
